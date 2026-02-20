@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ことば事典</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208; --paper: #f5f0e8; --paper2: #ede7d9;
+    --accent: #8b2e0f; --accent2: #c4763a; --muted: #7a6e5f;
+    --border: #d4c9b0; --weak: #5b8a6e; --mid: #c4763a;
+    --strong: #b5401e; --extreme: #7a1a0a; --tag-bg: #e8e0d0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: 'Noto Sans JP', sans-serif; font-weight: 300; min-height: 100vh; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(ellipse at 20% 50%, rgba(139,46,15,0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(196,118,58,0.04) 0%, transparent 50%); pointer-events: none; }
+
+  /* タブナビ */
+  .tab-nav { display: flex; border-bottom: 1px solid var(--border); background: rgba(245,240,232,0.97); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 99; padding: 0 28px; gap: 0; }
+  .tab-btn { font-family: 'Noto Serif JP', serif; font-size: 13px; letter-spacing: 0.15em; padding: 14px 24px; border: none; background: transparent; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; margin-bottom: -1px; }
+  .tab-btn:hover { color: var(--accent2); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-page { display: none; }
+  .tab-page.active { display: block; }
+
+  /* 書き出しノート */
+  .note-page { max-width: 1000px; margin: 0 auto; padding: 28px 20px; }
+  .note-add-section { background: var(--paper2); border: 1px solid var(--border); border-radius: 2px; padding: 22px 26px; margin-bottom: 24px; position: relative; }
+  .note-add-section::before { content: '新しく追加する'; position: absolute; top: -10px; left: 20px; background: var(--paper2); padding: 0 8px; font-size: 11px; letter-spacing: 0.2em; color: var(--muted); }
+  .note-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .note-form-full { margin-bottom: 12px; }
+  .note-type-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .note-type-label { font-size: 11px; letter-spacing: 0.15em; color: var(--muted); }
+  .type-track { display: flex; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .type-btn { padding: 5px 14px; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 0.1em; border: none; background: var(--paper); color: var(--muted); cursor: pointer; transition: all 0.15s; border-right: 1px solid var(--border); }
+  .type-btn:last-child { border-right: none; }
+  .type-btn.active { background: var(--accent); color: #fff; }
+  textarea.note-text-input { min-height: 90px; resize: vertical; font-size: 13px; line-height: 1.8; letter-spacing: 0.02em; }
+  textarea.note-memo-input { min-height: 50px; resize: vertical; font-size: 12px; }
+
+  /* ノートカード */
+  .note-filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+  .notes-grid { display: flex; flex-direction: column; gap: 14px; }
+  .note-card { background: var(--paper); border: 1px solid var(--border); border-radius: 2px; padding: 20px 22px; transition: box-shadow 0.2s; position: relative; }
+  .note-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .note-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .note-card-left { display: flex; flex-direction: column; gap: 5px; }
+  .note-work { font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 400; color: var(--ink); }
+  .note-card-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .note-type-badge { font-size: 10px; padding: 2px 8px; border-radius: 1px; }
+  .type-open { background: #e0eef8; color: #2a5a7a; }
+  .type-close { background: #f0e8f8; color: #5a2a7a; }
+  .type-both { background: #e8f0e0; color: #3a5a2a; }
+  .note-genre-tag { font-size: 10px; padding: 2px 7px; border-radius: 1px; background: var(--tag-bg); color: var(--muted); }
+  .note-user-tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; background: #f0ece0; color: #6a5030; }
+  .note-card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .note-text-display { font-size: 13px; line-height: 1.9; letter-spacing: 0.03em; color: var(--ink); background: var(--paper2); border-left: 3px solid var(--accent2); padding: 12px 16px; margin-bottom: 10px; border-radius: 0 2px 2px 0; white-space: pre-wrap; font-family: 'Noto Serif JP', serif; }
+  .note-pattern { font-size: 12px; color: var(--accent); line-height: 1.7; margin-bottom: 6px; }
+  .note-pattern::before { content: '📌 '; }
+  .note-self-memo { font-size: 11px; color: var(--muted); font-style: italic; line-height: 1.6; }
+  .note-self-memo::before { content: '✍ '; }
+  .note-date { font-size: 10px; color: var(--border); margin-top: 8px; letter-spacing: 0.05em; }
+
+  /* カード空状態 */
+  .note-empty { text-align: center; padding: 50px; color: var(--muted); }
+  .note-empty .icon { font-size: 36px; margin-bottom: 14px; opacity: 0.4; }
+  .note-empty p { font-size: 13px; letter-spacing: 0.1em; line-height: 2.2; }
+
+  header { border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; background: rgba(245,240,232,0.97); backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 100; gap: 16px; flex-wrap: wrap; }
+  .logo { font-family: 'Noto Serif JP', serif; font-size: 20px; font-weight: 600; letter-spacing: 0.15em; color: var(--accent); }
+  .logo span { font-size: 10px; font-weight: 300; color: var(--muted); display: block; letter-spacing: 0.2em; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-stats { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; }
+  .btn-fav-filter { font-size: 11px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 1px; background: transparent; color: var(--muted); cursor: pointer; letter-spacing: 0.1em; transition: all 0.15s; }
+  .btn-fav-filter.active { background: #f5d04a; border-color: #c4a020; color: #6a4a10; }
+
+  .main { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+
+  /* APIキー */
+  .api-key-notice { background: #fdf8ee; border: 1px solid #e8d8a0; border-radius: 2px; padding: 14px 18px; font-size: 12px; color: #6a5a2a; margin-bottom: 18px; letter-spacing: 0.05em; line-height: 1.8; }
+  .api-key-notice strong { color: var(--accent); }
+  .api-key-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+  .api-key-row input { flex: 1; font-family: monospace; font-size: 12px; }
+
+  /* 入力エリア */
+  .input-section { background: var(--paper2); border: 1px solid var(--border); border-radius: 2px; padding: 20px 24px; margin-bottom: 20px; position: relative; }
+  .input-section::before { content: '語を追加する'; position: absolute; top: -10px; left: 20px; background: var(--paper2); padding: 0 8px; font-size: 11px; letter-spacing: 0.2em; color: var(--muted); }
+
+  .mode-row { display: flex; align-items: center; margin-bottom: 14px; gap: 12px; }
+  .mode-track { display: flex; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .mode-btn { padding: 6px 16px; font-size: 12px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 0.15em; border: none; background: var(--paper); color: var(--muted); cursor: pointer; transition: all 0.15s; border-right: 1px solid var(--border); }
+  .mode-btn:last-child { border-right: none; }
+  .mode-btn.active { background: var(--ink); color: var(--paper); }
+  .mode-desc { font-size: 11px; color: var(--muted); font-style: italic; }
+
+  .input-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group.grow { flex: 1; min-width: 200px; }
+  .input-group label { font-size: 11px; letter-spacing: 0.15em; color: var(--muted); }
+
+  input[type="text"], select, textarea { background: var(--paper); border: 1px solid var(--border); border-radius: 1px; padding: 8px 12px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 300; color: var(--ink); outline: none; transition: border-color 0.2s; width: 100%; }
+  input[type="text"]:focus, select:focus, textarea:focus { border-color: var(--accent2); }
+
+  /* 濃さ生成 */
+  .density-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .density-label { font-size: 11px; letter-spacing: 0.15em; color: var(--muted); white-space: nowrap; }
+  .density-track { display: flex; border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+  .density-btn { padding: 5px 13px; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 0.1em; border: none; background: var(--paper); color: var(--muted); cursor: pointer; transition: all 0.15s; border-right: 1px solid var(--border); }
+  .density-btn:last-child { border-right: none; }
+  .density-btn.active { background: var(--accent2); color: #fff; }
+  .density-hint { font-size: 11px; color: var(--muted); font-style: italic; }
+
+  /* チップ */
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .chip-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; white-space: nowrap; }
+  .chip { font-size: 11px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); cursor: pointer; transition: all 0.15s; background: var(--paper); }
+  .chip:hover { border-color: var(--accent2); color: var(--accent2); }
+  .chip.history { border-style: dashed; }
+
+  /* 履歴 */
+  .history-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+
+  .btn { padding: 8px 20px; border: none; border-radius: 1px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 400; letter-spacing: 0.1em; transition: all 0.2s; white-space: nowrap; }
+  .btn-primary { background: var(--accent); color: #f5f0e8; }
+  .btn-primary:hover { background: #a03510; }
+  .btn-primary:disabled { background: var(--muted); cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* フィルター */
+  .filter-section { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .search-wrap { position: relative; flex: 1; min-width: 160px; }
+  .search-wrap input { padding-left: 28px; }
+  .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+  .filter-select { min-width: 100px; }
+  .count-badge { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; white-space: nowrap; }
+
+  /* 濃さチェック */
+  .density-check-group { display: flex; border: 1px solid var(--border); border-radius: 1px; overflow: hidden; }
+  .dcheck { display: flex; align-items: center; cursor: pointer; }
+  .dcheck input { display: none; }
+  .dcheck span { padding: 6px 11px; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 0.08em; color: var(--muted); background: var(--paper); border-right: 1px solid var(--border); transition: all 0.15s; white-space: nowrap; }
+  .dcheck:last-child span { border-right: none; }
+  .dcheck input:checked + span { background: var(--accent2); color: #fff; }
+
+  /* テーブル */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { font-family: 'Noto Serif JP', serif; font-weight: 400; font-size: 11px; letter-spacing: 0.2em; color: var(--muted); text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  thead th:hover { color: var(--accent2); }
+  tbody tr { border-bottom: 1px solid rgba(212,201,176,0.4); transition: background 0.15s; }
+  tbody tr:hover { background: rgba(237,231,217,0.5); }
+  tbody td { padding: 10px 9px; vertical-align: top; line-height: 1.6; }
+
+  .word-main { font-family: 'Noto Serif JP', serif; font-size: 16px; font-weight: 400; }
+  .word-reading { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; margin-top: 1px; }
+
+  .strength-bar { display: flex; gap: 3px; align-items: center; }
+  .strength-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+  .strength-dot.active.lv1 { background: var(--weak); }
+  .strength-dot.active.lv2 { background: var(--mid); }
+  .strength-dot.active.lv3 { background: var(--strong); }
+  .strength-dot.active.lv4 { background: var(--extreme); }
+  .strength-label { font-size: 10px; color: var(--muted); margin-left: 4px; }
+
+  .density-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 1px; }
+  .density-light { background: #e8f0f8; color: #3a5a7a; }
+  .density-middle { background: #f0ece0; color: #6a5030; }
+  .density-deep { background: #f0e8e0; color: #7a3a20; }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 3px; }
+  .tag { padding: 2px 6px; border-radius: 1px; font-size: 10px; letter-spacing: 0.05em; white-space: nowrap; }
+  .tag-hinshi { background: #dde8f0; color: #2a5a7a; }
+  .tag-gokan { background: #e8e0f0; color: #5a3a7a; }
+  .tag-buntai { background: #e8f0e0; color: #3a5a2a; }
+  .tag-joyoudo-3 { background: #e8f5e8; color: #2a6a2a; }
+  .tag-joyoudo-2 { background: #f5f0e0; color: #6a5a2a; }
+  .tag-joyoudo-1 { background: #f5e8e0; color: #6a3a2a; }
+  .tag-scene { background: var(--tag-bg); color: var(--muted); }
+
+  .example-text { color: var(--ink); line-height: 1.7; font-size: 12px; }
+  .note-text { color: var(--accent); font-size: 11px; line-height: 1.6; margin-bottom: 3px; }
+  .famous-text { color: #5a5a3a; font-size: 11px; line-height: 1.6; margin-bottom: 4px; font-style: italic; }
+
+  /* インライン編集メモ */
+  .memo-cell { position: relative; }
+  .memo-display { color: var(--muted); font-size: 11px; line-height: 1.6; font-style: italic; min-height: 18px; cursor: text; padding: 2px 4px; border-radius: 1px; border: 1px solid transparent; transition: border-color 0.15s; }
+  .memo-display:hover { border-color: var(--border); }
+  .memo-display.empty::before { content: '＋ メモを追加'; color: var(--border); font-style: normal; font-size: 10px; }
+  .memo-input { font-size: 11px; color: var(--muted); font-style: italic; border-color: var(--accent2) !important; min-height: 40px; resize: none; padding: 4px 6px; }
+
+  /* お気に入り */
+  .btn-fav { background: none; border: none; cursor: pointer; font-size: 15px; padding: 2px; transition: transform 0.15s; line-height: 1; opacity: 0.3; }
+  .btn-fav.active { opacity: 1; }
+  .btn-fav:hover { transform: scale(1.2); }
+  .btn-delete { background: none; border: none; color: var(--border); cursor: pointer; font-size: 15px; padding: 2px 4px; transition: color 0.2s; line-height: 1; }
+  .btn-delete:hover { color: var(--accent); }
+
+  /* 外部リンク */
+  .ext-links { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .ext-link { font-size: 10px; color: var(--accent2); border: 1px solid var(--border); border-radius: 1px; padding: 1px 6px; text-decoration: none; letter-spacing: 0.05em; transition: all 0.15s; white-space: nowrap; }
+  .ext-link:hover { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+  /* リンクポップアップ */
+  .link-popup-wrap { position: relative; display: inline-block; }
+  .link-icon { background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px; opacity: 0.5; transition: opacity 0.15s; line-height: 1; }
+  .link-icon:hover { opacity: 1; }
+  .link-popup { display: none; position: absolute; left: 0; top: 22px; z-index: 200; background: var(--paper); border: 1px solid var(--border); border-radius: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); min-width: 140px; overflow: hidden; }
+  .link-popup.open { display: block; }
+  .link-popup a { display: block; padding: 7px 14px; font-size: 11px; color: var(--ink); text-decoration: none; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); transition: background 0.1s; white-space: nowrap; }
+  .link-popup a:last-child { border-bottom: none; }
+  .link-popup a:hover { background: var(--paper2); color: var(--accent2); }
+  .link-popup a span { font-size: 10px; color: var(--muted); margin-right: 6px; }
+
+  .loading-row td { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; letter-spacing: 0.1em; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent2); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state { text-align: center; padding: 50px 24px; color: var(--muted); }
+  .empty-state .empty-icon { font-size: 36px; margin-bottom: 14px; opacity: 0.4; }
+  .empty-state p { font-size: 13px; letter-spacing: 0.1em; line-height: 2.2; }
+  .empty-hint { font-size: 11px; color: var(--border); margin-top: 10px; }
+
+  .error-msg { background: #fdf0ee; border: 1px solid #e8c0b8; border-radius: 2px; padding: 9px 13px; font-size: 12px; color: var(--accent); margin-top: 8px; }
+  .footer-actions { margin-top: 18px; display: flex; gap: 8px; justify-content: flex-end; }
+  .divider { height: 1px; background: var(--border); margin: 18px 0; opacity: 0.5; }
+
+  @keyframes fadeInRow { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  .new-row { animation: fadeInRow 0.3s ease; }
+
+  /* お気に入り行 */
+  tr.fav-row { background: rgba(245,208,74,0.06); }
+</style>
+</head>
+<body>
+
+<!-- タブナビ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('dict-tab', this)">ことば事典</button>
+  <button class="tab-btn" onclick="switchTab('note-tab', this)">書き出し・締め方ノート</button>
+</nav>
+
+<div id="dict-tab" class="tab-page active">
+<header>
+  <div class="logo">ことば事典<span>自分で育てる語彙の辞典</span></div>
+  <div class="header-right">
+    <button class="btn-fav-filter" id="favFilterBtn" onclick="toggleFavFilter()">★ お気に入りのみ</button>
+    <div class="header-stats" id="headerStats">0 語収録</div>
+    <div id="providerBadge" style="font-size:10px;color:var(--muted);letter-spacing:0.1em;"></div>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="api-key-notice" id="apiKeyNotice">
+    <strong>APIキーを設定してください</strong><br>
+    <div style="display:flex;gap:8px;margin:10px 0 6px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+        <input type="radio" name="apiProvider" value="gemini" checked onchange="updateApiUi()">
+        <span><strong>Gemini（無料）</strong> — Google AI Studio</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+        <input type="radio" name="apiProvider" value="anthropic" onchange="updateApiUi()">
+        <span><strong>Claude（有料）</strong> — Anthropic</span>
+      </label>
+    </div>
+    <div id="apiHint" style="font-size:11px;color:#6a5a2a;margin-bottom:8px;line-height:1.7;">
+      APIキーは <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> から無料で取得できます。クレジットカード不要です。
+    </div>
+    <div class="api-key-row">
+      <input type="text" id="apiKeyInput" placeholder="AIza..." />
+      <button class="btn btn-primary" onclick="saveApiKey()">設定</button>
+    </div>
+  </div>
+
+  <div class="input-section">
+    <div class="mode-row">
+      <div class="mode-track">
+        <button class="mode-btn" data-mode="dict" onclick="setMode(this)">辞書モード</button>
+        <button class="mode-btn active" data-mode="expand" onclick="setMode(this)">展開モード</button>
+      </div>
+      <span class="mode-desc" id="modeDesc">カテゴリ・感情・情景から類語を一覧展開</span>
+    </div>
+
+    <div class="input-row">
+      <div class="input-group grow">
+        <label id="inputLabel">カテゴリ・感情・語・情景を入力</label>
+        <input type="text" id="queryInput" placeholder="例：喜び、怒り、如月、雨の描写、死海文書…" />
+      </div>
+      <div class="input-group" style="flex:0 0 95px" id="countWrap">
+        <label>件数</label>
+        <select id="countSelect">
+          <option value="5">5語</option>
+          <option value="8">8語</option>
+          <option value="12">12語</option>
+          <option value="20" selected>20語</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="generateBtn" onclick="generate()">類語を展開</button>
+    </div>
+
+    <div class="density-row" id="densityRow">
+      <span class="density-label">文体の濃さ</span>
+      <div class="density-track">
+        <button class="density-btn active" data-density="ライト" onclick="setDensity(this)">ライト</button>
+        <button class="density-btn" data-density="ミドル" onclick="setDensity(this)">ミドル</button>
+        <button class="density-btn" data-density="ディープ" onclick="setDensity(this)">ディープ</button>
+        <button class="density-btn" data-density="すべて" onclick="setDensity(this)">すべて</button>
+      </div>
+      <span class="density-hint" id="densityHint">口語・和語・平易な表現を優先</span>
+    </div>
+
+    <div class="chip-row" id="chipRow">
+      <span class="chip-label">よく使う：</span>
+      <span class="chip" onclick="quickInput('喜び')">喜び</span>
+      <span class="chip" onclick="quickInput('怒り')">怒り</span>
+      <span class="chip" onclick="quickInput('悲しみ')">悲しみ</span>
+      <span class="chip" onclick="quickInput('恐れ')">恐れ</span>
+      <span class="chip" onclick="quickInput('切なさ')">切なさ</span>
+      <span class="chip" onclick="quickInput('雨の描写')">雨の描写</span>
+      <span class="chip" onclick="quickInput('夜明け')">夜明け</span>
+      <span class="chip" onclick="quickInput('如月')">如月</span>
+      <span class="chip" onclick="quickInput('風の表現')">風の表現</span>
+      <span class="chip" onclick="quickInput('沈黙')">沈黙</span>
+    </div>
+
+    <div class="history-row" id="historyRow" style="display:none">
+      <span class="chip-label">履歴：</span>
+    </div>
+
+    <div id="errorMsg"></div>
+  </div>
+
+  <!-- フィルター -->
+  <div class="filter-section">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="語・例文・メモを検索…" oninput="filterTable()" />
+    </div>
+    <select class="filter-select" id="filterCategory" onchange="filterTable()">
+      <option value="">すべてのカテゴリ</option>
+    </select>
+    <select class="filter-select" id="filterStrength" onchange="filterTable()">
+      <option value="">すべての強度</option>
+      <option value="弱">弱</option>
+      <option value="中">中</option>
+      <option value="強">強</option>
+      <option value="極">極</option>
+    </select>
+    <div class="density-check-group" id="filterDensity">
+      <label class="dcheck"><input type="checkbox" value="ライト" onchange="filterTable()"><span>ライト</span></label>
+      <label class="dcheck"><input type="checkbox" value="ミドル" onchange="filterTable()"><span>ミドル</span></label>
+      <label class="dcheck"><input type="checkbox" value="ディープ" onchange="filterTable()"><span>ディープ</span></label>
+    </div>
+    <select class="filter-select" id="filterBuntai" onchange="filterTable()">
+      <option value="">すべての文体</option>
+      <option value="口語">口語</option>
+      <option value="文語">文語</option>
+      <option value="詩的">詩的</option>
+    </select>
+    <div class="density-check-group" id="filterCoreWide">
+      <label class="dcheck"><input type="checkbox" value="コア" onchange="filterTable()"><span>コア</span></label>
+      <label class="dcheck"><input type="checkbox" value="幅広" onchange="filterTable()"><span>幅広</span></label>
+    </div>
+    <span class="count-badge" id="countBadge"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th onclick="sortBy('word')">語</th>
+          <th onclick="sortBy('strength')">強度</th>
+          <th onclick="sortBy('density')">濃さ</th>
+          <th>品詞・語感・文体</th>
+          <th onclick="sortBy('joyoudo')">常用度</th>
+          <th>場面</th>
+          <th>例文</th>
+          <th>注意・用例・リンク</th>
+          <th>メモ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">📖</div>
+    <p>感情、情景、語、概念、なんでも入力して<br>「類語を展開」を押すと<br>Claudeが自動でピックアップします</p>
+    <p class="empty-hint">「死海文書」→神秘・古代・時間の語彙　／　「如月」→和月・季節語　にも対応</p>
+  </div>
+
+  <div class="divider"></div>
+  <div class="footer-actions">
+    <button class="btn btn-secondary" onclick="clearAll()">すべて消去</button>
+    <button class="btn btn-secondary" onclick="exportCSV()">CSV書き出し</button>
+  </div>
+</div>
+
+<script>
+// ── 状態 ──────────────────────────────
+let words = [];
+let apiKey = '';
+let sortKey = '';
+let sortAsc = true;
+let currentDensity = 'ライト';
+let currentMode = 'expand';
+let showFavOnly = false;
+let searchHistory = [];
+
+const STRENGTH_ORDER = {'弱':1,'中':2,'強':3,'極':4};
+const DENSITY_ORDER  = {'ライト':1,'ミドル':2,'ディープ':3};
+const DENSITY_HINTS  = {
+  'ライト': '口語・和語・平易な表現を優先',
+  'ミドル': 'バランスよく幅広く',
+  'ディープ': '文語・漢語・格調ある表現を優先',
+  'すべて': '濃さを問わずすべての表現を収録'
+};
+const MODE_CONFIG = {
+  dict: {
+    desc: '語を1つ深掘り。読み・意味・類語・注意を詳しく表示',
+    label: '語を入力（1語）',
+    placeholder: '例：瀟洒、逡巡、木漏れ日、死海文書…',
+    btnText: '調べる'
+  },
+  expand: {
+    desc: 'カテゴリ・感情・情景・概念から類語を一覧展開',
+    label: 'カテゴリ・感情・語・情景を入力',
+    placeholder: '例：喜び、怒り、如月、雨の描写、死海文書…',
+    btnText: '類語を展開'
+  }
+};
+
+// ── 初期化：ローカルストレージから復元 ───────────────
+function loadStorage() {
+  try {
+    const saved = localStorage.getItem('kotoba_jiten_v2');
+    if (saved) {
+      const data = JSON.parse(saved);
+      words = data.words || [];
+      searchHistory = data.history || [];
+      notes = data.notes || [];
+      apiKey = data.apiKey || '';
+      apiProvider = data.apiProvider || 'gemini';
+      if (apiProvider === 'anthropic') {
+        const radio = document.querySelector('input[name="apiProvider"][value="anthropic"]');
+        if (radio) { radio.checked = true; updateApiUi(); }
+      }
+      if (apiKey) document.getElementById('apiKeyNotice').style.display = 'none';
+    }
+  } catch(e) {}
+  updateFilterOptions();
+  renderTable();
+  updateStats();
+  renderHistory();
+  renderNotes();
+}
+
+function saveStorage() {
+  try {
+    localStorage.setItem('kotoba_jiten_v2', JSON.stringify({
+      words, history: searchHistory, notes, apiKey, apiProvider
+    }));
+  } catch(e) {}
+}
+
+// ── APIキー ────────────────────────────
+let apiProvider = 'gemini'; // 'gemini' or 'anthropic'
+
+function updateApiUi() {
+  apiProvider = document.querySelector('input[name="apiProvider"]:checked').value;
+  const hint = document.getElementById('apiHint');
+  const input = document.getElementById('apiKeyInput');
+  if (apiProvider === 'gemini') {
+    hint.innerHTML = 'APIキーは <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> から無料で取得できます。クレジットカード不要です。';
+    input.placeholder = 'AIza...';
+  } else {
+    hint.innerHTML = 'APIキーは <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a> から取得できます（従量課金）。';
+    input.placeholder = 'sk-ant-...';
+  }
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { alert('APIキーを入力してください'); return; }
+  if (apiProvider === 'anthropic' && !key.startsWith('sk-ant-')) {
+    alert('ClaudeのAPIキーは sk-ant- から始まる形式で入力してください');
+    return;
+  }
+  if (apiProvider === 'gemini' && !key.startsWith('AIza')) {
+    alert('GeminiのAPIキーは AIza から始まる形式で入力してください');
+    return;
+  }
+  apiKey = key;
+  document.getElementById('apiKeyNotice').style.display = 'none';
+  document.getElementById('apiKeyInput').value = '';
+  const badge = document.getElementById('providerBadge');
+  if (badge) badge.textContent = apiProvider === 'gemini' ? '● Gemini 無料' : '● Claude';
+  saveStorage();
+}
+
+// ── モード切り替え ─────────────────────
+function setMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMode = btn.dataset.mode;
+  const cfg = MODE_CONFIG[currentMode];
+  document.getElementById('modeDesc').textContent = cfg.desc;
+  document.getElementById('inputLabel').textContent = cfg.label;
+  document.getElementById('queryInput').placeholder = cfg.placeholder;
+  document.getElementById('generateBtn').textContent = cfg.btnText;
+  const isDct = currentMode === 'dict';
+  document.getElementById('countWrap').style.display = isDct ? 'none' : '';
+  document.getElementById('densityRow').style.display = isDct ? 'none' : '';
+  document.getElementById('chipRow').style.display = isDct ? 'none' : '';
+}
+
+function setDensity(btn) {
+  document.querySelectorAll('.density-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentDensity = btn.dataset.density;
+  document.getElementById('densityHint').textContent = DENSITY_HINTS[currentDensity];
+}
+
+function quickInput(text) {
+  document.getElementById('queryInput').value = text;
+  document.getElementById('queryInput').focus();
+}
+
+// ── 履歴 ───────────────────────────────
+function addHistory(query) {
+  searchHistory = [query, ...searchHistory.filter(h => h !== query)].slice(0, 12);
+  renderHistory();
+  saveStorage();
+}
+
+function renderHistory() {
+  const row = document.getElementById('historyRow');
+  if (searchHistory.length === 0) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  row.innerHTML = '<span class="chip-label">履歴：</span>' +
+    searchHistory.map(h =>
+      `<span class="chip history" onclick="quickInput('${h.replace(/'/g,"\\'")}')">↩ ${h}</span>`
+    ).join('');
+}
+
+// ── 生成 ───────────────────────────────
+async function generate() {
+  const query = document.getElementById('queryInput').value.trim();
+  if (!query) return;
+  if (!apiKey) {
+    document.getElementById('errorMsg').innerHTML = '<div class="error-msg">APIキーを設定してください</div>';
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  document.getElementById('errorMsg').innerHTML = '';
+  document.getElementById('emptyState').style.display = 'none';
+
+  const tbody = document.getElementById('tableBody');
+  const loadingRow = document.createElement('tr');
+  loadingRow.className = 'loading-row';
+  loadingRow.id = 'loadingRow';
+  loadingRow.innerHTML = `<td colspan="11"><span class="spinner"></span>Claudeが語を集めています…</td>`;
+  tbody.insertBefore(loadingRow, tbody.firstChild);
+
+  const count = currentMode === 'dict' ? '5' : document.getElementById('countSelect').value;
+
+  // プロンプト生成
+  let prompt;
+  if (currentMode === 'dict') {
+    prompt = `あなたは日本語の語彙専門家です。「${query}」という語（または概念・固有名詞）を辞書的に詳しく解説し、さらに意味・印象が近い類語・関連語を4語加えて、合計5エントリをJSON配列で返してください。
+最初のエントリは「${query}」自体の詳細解説です。残り4つは近傍の語です。
+概念・連想メモとして、その語から連想される世界観・印象・使いどころなどを memo フィールドに30字以内で書いてください。
+
+[{"word":"語","reading":"よみがな","hinshi":"品詞","category":"カテゴリ","subcategory":"細分類","strength":"弱|中|強|極","density":"ライト|ミドル|ディープ","gokan":"語感（カンマ区切り）","buntai":"文体（カンマ区切り）","joyoudo":"★☆☆|★★☆|★★★","scene":"場面タグ（カンマ区切り、3つ以内）","example":"30〜40字の例文","note":"誤用・注意点・使いどころ（詳しく）","famous_phrase":"著名な用例や慣用表現（あれば）","memo":"連想メモ（30字以内）"}]
+JSON配列のみ返してください。`;
+  } else {
+    const densityInstruction = {
+      'ライト': '文体の濃さは「ライト」で統一。口語・和語・平易な表現を優先し、漢語や文語調は避ける。',
+      'ミドル': '文体の濃さは「ミドル」。口語と文語のバランスをとる。',
+      'ディープ': '文体の濃さは「ディープ」で統一。文語・漢語・雅語・格調ある表現を優先。',
+      'すべて': '濃さはライト・ミドル・ディープをバランスよく混在させる。'
+    }[currentDensity];
+
+    const half = Math.ceil(count / 2);
+    prompt = `あなたは日本語の語彙専門家です。「${query}」に関連する語を${count}個ピックアップして、JSON配列で返してください。
+
+【重要】以下の2グループに分けて出力してください：
+- コア（${half}語）：その語・感情・概念の核心となる代表的な単語・熟語・四字熟語
+- 幅広（${count - half}語）：コアより周辺にある語、強度違い・色調違い・派生語・関連語
+
+単語・熟語・四字熟語を優先し、「るんるん」「顔がほころぶ」などのフレーズ・慣用句は除外してください。
+固有名詞・概念が入力された場合は連想される語彙を展開してください。
+${densityInstruction}
+subcategoryフィールドに「コア」または「幅広」を必ず入れてください。
+各語のmemoフィールドに印象・使いどころを30字以内で書いてください。
+
+[{"word":"語","reading":"よみがな","hinshi":"品詞","category":"カテゴリ","subcategory":"細分類","strength":"弱|中|強|極","density":"ライト|ミドル|ディープ","gokan":"語感（カンマ区切り）","buntai":"文体（カンマ区切り）","joyoudo":"★☆☆|★★☆|★★★","scene":"場面タグ（カンマ区切り、3つ以内）","example":"20〜30字程度の例文","note":"誤用・注意点（なければ空文字）","famous_phrase":"著名な用例（あれば）","memo":"連想メモ（30字以内）"}]
+JSON配列のみ返してください。`;
+  }
+
+  try {
+    let responseText = '';
+
+    if (apiProvider === 'gemini') {
+      // Gemini API
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 4000, temperature: 0.7 }
+          })
+        }
+      );
+      if (!geminiRes.ok) { const err = await geminiRes.json(); throw new Error(err.error?.message || `Gemini APIエラー: ${geminiRes.status}`); }
+      const geminiData = await geminiRes.json();
+      responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } else {
+      // Anthropic Claude API
+      const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-6',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      if (!claudeRes.ok) { const err = await claudeRes.json(); throw new Error(err.error?.message || `Claude APIエラー: ${claudeRes.status}`); }
+      const claudeData = await claudeRes.json();
+      responseText = claudeData.content?.[0]?.text || '';
+    }
+
+    const jsonMatch = responseText.trim().match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('レスポンスの解析に失敗しました');
+    const newWords = JSON.parse(jsonMatch[0]);
+    newWords.forEach(w => { w.id = Date.now() + Math.random(); w.isNew = true; w.fav = false; });
+    words = [...newWords, ...words];
+    addHistory(query);
+    updateFilterOptions();
+    renderTable();
+    saveStorage();
+
+  } catch(e) {
+    document.getElementById('errorMsg').innerHTML = `<div class="error-msg">エラー: ${e.message}</div>`;
+    if (words.length === 0) document.getElementById('emptyState').style.display = 'block';
+  } finally {
+    const lr = document.getElementById('loadingRow'); if (lr) lr.remove();
+    btn.disabled = false;
+    btn.textContent = MODE_CONFIG[currentMode].btnText;
+    document.getElementById('queryInput').value = '';
+    updateStats();
+  }
+}
+
+// ── お気に入り ─────────────────────────
+function toggleFav(id) {
+  const w = words.find(w => String(w.id) === String(id));
+  if (w) { w.fav = !w.fav; saveStorage(); renderTable(); }
+}
+
+function showApiSetting() {
+  const notice = document.getElementById('apiKeyNotice');
+  notice.style.display = 'block';
+  // 現在の設定を反映
+  if (apiKey) document.getElementById('apiKeyInput').value = apiKey;
+  if (apiProvider === 'anthropic') {
+    const radio = document.querySelector('input[name="apiProvider"][value="anthropic"]');
+    if (radio) { radio.checked = true; updateApiUi(); }
+  }
+  notice.scrollIntoView({ behavior: 'smooth' });
+}
+
+function toggleFavFilter() {
+  showFavOnly = !showFavOnly;
+  document.getElementById('favFilterBtn').classList.toggle('active', showFavOnly);
+  renderTable();
+}
+
+// ── メモ編集 ───────────────────────────
+function startMemoEdit(id) {
+  const w = words.find(w => String(w.id) === String(id));
+  if (!w) return;
+  const display = document.querySelector(`.memo-display[data-id="${id}"]`);
+  if (!display) return;
+  const ta = document.createElement('textarea');
+  ta.className = 'memo-input';
+  ta.value = w.memo || '';
+  ta.placeholder = '自由にメモを書く…';
+  ta.style.width = '100%';
+  display.replaceWith(ta);
+  ta.focus();
+  ta.addEventListener('blur', () => {
+    w.memo = ta.value;
+    saveStorage();
+    const newDisplay = document.createElement('div');
+    newDisplay.className = `memo-display${w.memo ? '' : ' empty'}`;
+    newDisplay.dataset.id = id;
+    newDisplay.textContent = w.memo || '';
+    newDisplay.addEventListener('click', () => startMemoEdit(id));
+    ta.replaceWith(newDisplay);
+  });
+  ta.addEventListener('keydown', e => { if (e.key === 'Escape') ta.blur(); });
+}
+
+// ── レンダリング ───────────────────────
+function strengthDots(s) {
+  const lv = STRENGTH_ORDER[s] || 0;
+  return [1,2,3,4].map(i => `<div class="strength-dot${i<=lv?` active lv${lv}`:''}"></div>`).join('') + `<span class="strength-label">${s||''}</span>`;
+}
+function densityBadge(d) {
+  if (!d) return '';
+  const cls = d==='ライト'?'density-light':d==='ミドル'?'density-middle':'density-deep';
+  return `<span class="density-badge ${cls}">${d}</span>`;
+}
+function joyoudoClass(j) { return j==='★★★'?'tag-joyoudo-3':j==='★★☆'?'tag-joyoudo-2':'tag-joyoudo-1'; }
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('filterCategory').value;
+  const str = document.getElementById('filterStrength').value;
+  const denChecked = [...document.querySelectorAll('#filterDensity input:checked')].map(i => i.value);
+  const cwChecked = [...document.querySelectorAll('#filterCoreWide input:checked')].map(i => i.value);
+  const bun = document.getElementById('filterBuntai').value;
+
+  let filtered = words.filter(w => {
+    if (showFavOnly && !w.fav) return false;
+    if (cat && w.category !== cat) return false;
+    if (str && w.strength !== str) return false;
+    if (denChecked.length > 0 && !denChecked.includes(w.density)) return false;
+    if (cwChecked.length > 0 && !cwChecked.includes(w.subcategory)) return false;
+    if (bun && !w.buntai?.includes(bun)) return false;
+    if (search) {
+      const hay = [w.word,w.reading,w.example,w.note,w.memo,w.scene,w.famous_phrase,w.category].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (sortKey) {
+    filtered.sort((a,b) => {
+      let av=a[sortKey]||'', bv=b[sortKey]||'';
+      if (sortKey==='strength') { av=STRENGTH_ORDER[av]||0; bv=STRENGTH_ORDER[bv]||0; }
+      if (sortKey==='density')  { av=DENSITY_ORDER[av]||0;  bv=DENSITY_ORDER[bv]||0; }
+      if (sortKey==='joyoudo')  { av=av.length; bv=bv.length; }
+      return sortAsc?(av>bv?1:-1):(av<bv?1:-1);
+    });
+  }
+
+  document.getElementById('countBadge').textContent = `${filtered.length} 語`;
+  document.getElementById('emptyState').style.display = words.length===0?'block':'none';
+
+  tbody.innerHTML = filtered.map(w => {
+    const gokanTags = (w.gokan||'').split(',').filter(Boolean).map(g=>`<span class="tag tag-gokan">${g.trim()}</span>`).join('');
+    const buntaiTags = (w.buntai||'').split(',').filter(Boolean).map(b=>`<span class="tag tag-buntai">${b.trim()}</span>`).join('');
+    const sceneTags = (w.scene||'').split(',').filter(Boolean).map(s=>`<span class="tag tag-scene">${s.trim()}</span>`).join('');
+    const encoded = encodeURIComponent(w.word);
+    const pid = 'popup_' + String(w.id).replace('.','_');
+    const extLinks = `<div class="link-popup-wrap">
+      <button class="link-icon" onclick="togglePopup('${pid}')" title="辞書リンク">🔗</button>
+      <div class="link-popup" id="${pid}">
+        <a href="https://kotobank.jp/search/?q=${encoded}" target="_blank"><span>📚</span>コトバンク</a>
+        <a href="https://www.weblio.jp/content/${encoded}" target="_blank"><span>📖</span>Weblio</a>
+        <a href="https://www.aozora.gr.jp/index_pages/search_detail.html?q=${encoded}" target="_blank"><span>🌸</span>青空文庫</a>
+        <a href="https://dictionary.goo.ne.jp/srch/all/${encoded}/m1u/" target="_blank"><span>🔍</span>goo辞書</a>
+      </div>
+    </div>`;
+    const id = w.id;
+
+    return `
+    <tr class="${w.isNew?'new-row':''} ${w.fav?'fav-row':''}" data-id="${id}">
+      <td><button class="btn-fav ${w.fav?'active':''}" onclick="toggleFav('${id}')" title="お気に入り">★</button></td>
+      <td><div class="word-main">${w.word}</div><div class="word-reading">${w.reading||''}</div></td>
+      <td><div class="strength-bar">${strengthDots(w.strength)}</div></td>
+      <td>${densityBadge(w.density)}</td>
+      <td><div class="tags"><span class="tag tag-hinshi">${w.hinshi||''}</span>${gokanTags}${buntaiTags}</div></td>
+      <td><span class="tag ${joyoudoClass(w.joyoudo)}">${w.joyoudo||''}</span></td>
+      <td><div class="tags">${sceneTags}</div></td>
+      <td><div class="example-text">${w.example||''}</div></td>
+      <td>
+        ${w.note?`<div class="note-text">⚠ ${w.note}</div>`:''}
+        ${w.famous_phrase?`<div class="famous-text">📜 ${w.famous_phrase}</div>`:''}
+        ${extLinks}
+      </td>
+      <td class="memo-cell">
+        <div class="memo-display ${w.memo?'':'empty'}" data-id="${id}">${w.memo||''}</div>
+      </td>
+      <td><button class="btn-delete" onclick="deleteWord('${id}')" title="削除">×</button></td>
+    </tr>`;
+  }).join('');
+
+  // メモのクリックイベントをバインド
+  filtered.forEach(w => {
+    const el = document.querySelector(`.memo-display[data-id="${w.id}"]`);
+    if (el) el.addEventListener('click', () => startMemoEdit(w.id));
+  });
+
+  setTimeout(()=>{ words.forEach(w=>w.isNew=false); }, 500);
+}
+
+function filterTable() { renderTable(); }
+function sortBy(key) {
+  if (sortKey===key) sortAsc=!sortAsc; else { sortKey=key; sortAsc=true; }
+  renderTable();
+}
+function deleteWord(id) {
+  words = words.filter(w=>String(w.id)!==String(id));
+  updateFilterOptions(); updateStats(); renderTable(); saveStorage();
+}
+function clearAll() {
+  if (!words.length) return;
+  if (confirm(`${words.length} 語すべて削除しますか？`)) {
+    words=[]; updateFilterOptions(); updateStats(); renderTable(); saveStorage();
+  }
+}
+function updateStats() { document.getElementById('headerStats').textContent = `${words.length} 語収録`; }
+function updateFilterOptions() {
+  const cats = [...new Set(words.map(w=>w.category).filter(Boolean))];
+  const sel = document.getElementById('filterCategory');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">すべてのカテゴリ</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  if (cats.includes(cur)) sel.value = cur;
+}
+function togglePopup(id) {
+  // 他を閉じる
+  document.querySelectorAll('.link-popup.open').forEach(p => { if (p.id !== id) p.classList.remove('open'); });
+  const popup = document.getElementById(id);
+  if (popup) popup.classList.toggle('open');
+}
+// クリック外で閉じる
+document.addEventListener('click', e => {
+  if (!e.target.closest('.link-popup-wrap')) {
+    document.querySelectorAll('.link-popup.open').forEach(p => p.classList.remove('open'));
+  }
+});
+
+function exportCSV() {
+  if (!words.length) return;
+  const headers = ['語','読み','品詞','カテゴリ','細分類','強度','濃さ','語感','文体','常用度','場面','例文','有名用例','注意','メモ','お気に入り'];
+  const rows = words.map(w=>[w.word,w.reading,w.hinshi,w.category,w.subcategory,w.strength,w.density,w.gokan,w.buntai,w.joyoudo,w.scene,w.example,w.famous_phrase,w.note,w.memo,w.fav?'★':''].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = '\uFEFF'+[headers.join(','),...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `ことば事典_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── タブ切り替え ──────────────────────────
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── 書き出しノート ────────────────────────
+let notes = [];
+let currentNoteType = '書き出し';
+
+function setNoteType(btn) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentNoteType = btn.dataset.type;
+}
+
+function addNote() {
+  const work = document.getElementById('noteWork').value.trim();
+  const text = document.getElementById('noteText').value.trim();
+  if (!work || !text) {
+    document.getElementById('noteError').innerHTML = '<div class="error-msg">作品名とテキストは必須です</div>';
+    return;
+  }
+  document.getElementById('noteError').innerHTML = '';
+  const note = {
+    id: Date.now(),
+    work,
+    genre: document.getElementById('noteGenre').value.trim(),
+    type: currentNoteType,
+    text,
+    pattern: document.getElementById('notePattern').value.trim(),
+    tags: document.getElementById('noteTags').value.trim().split(/\s+/).filter(Boolean),
+    date: new Date().toLocaleDateString('ja-JP', {year:'numeric',month:'2-digit',day:'2-digit'})
+  };
+  notes = [note, ...notes];
+  saveStorage();
+  renderNotes();
+  // フォームリセット
+  ['noteWork','noteGenre','noteText','notePattern','noteTags'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function deleteNote(id) {
+  if (!confirm('このメモを削除しますか？')) return;
+  notes = notes.filter(n => n.id !== id);
+  saveStorage();
+  renderNotes();
+}
+
+function renderNotes() {
+  const search = document.getElementById('noteSearch').value.toLowerCase();
+  const typeFilter = document.getElementById('noteFilterType').value;
+  const grid = document.getElementById('notesGrid');
+  const empty = document.getElementById('noteEmpty');
+
+  let filtered = notes.filter(n => {
+    if (typeFilter && n.type !== typeFilter) return false;
+    if (search) {
+      const hay = [n.work, n.text, n.pattern, n.genre, ...(n.tags||[])].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('noteCountBadge').textContent = `${filtered.length} 件`;
+  empty.style.display = filtered.length === 0 ? 'block' : 'none';
+  grid.style.display = filtered.length === 0 ? 'none' : 'flex';
+
+  const typeCls = { '書き出し': 'type-open', '締め': 'type-close', '両方': 'type-both' };
+  grid.innerHTML = filtered.map(n => {
+    const tags = (n.tags||[]).map(t => `<span class="note-user-tag">${t}</span>`).join('');
+    return `
+    <div class="note-card">
+      <div class="note-card-header">
+        <div class="note-card-left">
+          <div class="note-work">${n.work}</div>
+          <div class="note-card-tags">
+            <span class="note-type-badge ${typeCls[n.type]||''}">${n.type}</span>
+            ${n.genre ? `<span class="note-genre-tag">${n.genre}</span>` : ''}
+            ${tags}
+          </div>
+        </div>
+        <div class="note-card-actions">
+          <button class="btn-delete" onclick="deleteNote(${n.id})" title="削除">×</button>
+        </div>
+      </div>
+      <div class="note-text-display">${n.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      ${n.pattern ? `<div class="note-pattern">${n.pattern}</div>` : ''}
+      <div class="note-date">${n.date}</div>
+    </div>`;
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('queryInput').addEventListener('keydown', e => { if(e.key==='Enter') generate(); });
+  loadStorage();
+});
+</script>
+</div><!-- /dict-tab -->
+
+<!-- 書き出し・締め方ノートページ -->
+<div id="note-tab" class="tab-page">
+<div class="note-page">
+
+  <div class="note-add-section">
+    <div class="note-form-grid">
+      <div class="input-group">
+        <label>作品名</label>
+        <input type="text" id="noteWork" placeholder="例：継母の心得 コミカライズ1巻" />
+      </div>
+      <div class="input-group">
+        <label>ジャンル</label>
+        <input type="text" id="noteGenre" placeholder="例：異世界・転生・令嬢" />
+      </div>
+    </div>
+
+    <div class="note-type-row">
+      <span class="note-type-label">種別</span>
+      <div class="type-track">
+        <button class="type-btn active" data-type="書き出し" onclick="setNoteType(this)">書き出し</button>
+        <button class="type-btn" data-type="締め" onclick="setNoteType(this)">締め</button>
+        <button class="type-btn" data-type="両方" onclick="setNoteType(this)">両方</button>
+      </div>
+    </div>
+
+    <div class="note-form-full">
+      <label class="input-group" style="gap:5px">
+        <span style="font-size:11px;letter-spacing:0.15em;color:var(--muted)">テキスト（冒頭数行）</span>
+        <textarea class="note-text-input" id="noteText" placeholder="「二人とも、お茶が入りましたわよ」&#10;&#10;私は忘れない。かつての私が犯した罪を。――そして……この物語に関わる、全ての愛しい者たちのことを。"></textarea>
+      </label>
+    </div>
+
+    <div class="note-form-grid">
+      <div class="input-group">
+        <label>パターンメモ（技法分析）</label>
+        <textarea class="note-memo-input" id="notePattern" placeholder="例：台詞から入り、独白で過去を引き出す構成"></textarea>
+      </div>
+      <div class="input-group">
+        <label>タグ（スペース区切り）</label>
+        <input type="text" id="noteTags" placeholder="例：台詞始まり 独白 回想 余韻" />
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-primary" onclick="addNote()">追加する</button>
+    </div>
+    <div id="noteError"></div>
+  </div>
+
+  <!-- フィルター -->
+  <div class="note-filters">
+    <div class="search-wrap" style="flex:1;min-width:160px;">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="noteSearch" placeholder="作品名・テキスト・タグを検索…" oninput="renderNotes()" />
+    </div>
+    <select class="filter-select" id="noteFilterType" onchange="renderNotes()">
+      <option value="">すべての種別</option>
+      <option value="書き出し">書き出し</option>
+      <option value="締め">締め</option>
+      <option value="両方">両方</option>
+    </select>
+    <span class="count-badge" id="noteCountBadge"></span>
+  </div>
+
+  <div class="notes-grid" id="notesGrid"></div>
+  <div id="noteEmpty" class="note-empty" style="display:none">
+    <div class="icon">📝</div>
+    <p>好きな書き出し・締め方を<br>コレクションしていきましょう</p>
+  </div>
+
+</div>
+</div><!-- /note-tab -->
+
+</body>
+</html>
