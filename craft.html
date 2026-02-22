@@ -234,10 +234,11 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 .memo-preview-body { flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:20px; }
 .memo-preview-section { display:flex; flex-direction:column; gap:8px; }
 .memo-preview-label { font-size:9px; letter-spacing:0.15em; color:var(--muted); border-bottom:1px solid var(--border); padding-bottom:4px; }
-.memo-preview-text { font-family:'Noto Serif JP',serif; font-size:13px; line-height:2.0; color:var(--ink); white-space:pre-wrap; word-break:break-all; overflow-wrap:break-word; }
-.memo-preview-text hr { border:none; border-top:1px solid var(--border); margin:2px 0; }
-.memo-preview-text .preview-dotline { border:none; border-top:1px dotted var(--border); margin:2px 0; display:block; }
-.memo-preview-text .preview-dblline { border:none; border-top:3px double var(--border); margin:2px 0; display:block; }
+.memo-preview-text { font-family:'Noto Serif JP',serif; font-size:13px; line-height:2.0; color:var(--ink); overflow:hidden; width:100%; box-sizing:border-box; }
+.memo-preview-text div { min-height:1.2em; overflow:hidden; }
+.preview-hr  { border:none; border-top:1px solid var(--border); margin:0.4em 0; width:100%; }
+.preview-dbl { border:none; border-top:3px double var(--border); margin:0.4em 0; width:100%; }
+.preview-dot { border:none; border-top:1px dotted var(--border); margin:0.4em 0; width:100%; }
 .memo-preview-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
 .memo-preview-tag { font-size:10px; padding:2px 8px; background:var(--paper2); border:1px solid var(--border); color:var(--muted); border-radius:10px; }
 .memo-preview-date { font-size:10px; color:var(--muted); text-align:right; margin-top:4px; }
@@ -1728,22 +1729,27 @@ function deleteSelected() {
 
 // ── 付箋プレビュー ────────────────────────────────
 function _previewRenderText(text) {
-  // 罫線だけの行を CSS線に変換してからescHtml
   const lines = text.split('\n');
-  const rendered = lines.map(line => {
+  return lines.map(line => {
     const t = line.trim();
-    if (/^─{3,}$/.test(t) || /^-{3,}$/.test(t)) {
-      return '<hr>';
+    // 罫線だけの行（前後に文字があっても罫線文字が大半を占める行）
+    if (/^─{2,}$/.test(t) || /^-{4,}$/.test(t)) {
+      return '<div class="preview-hr"></div>';
     }
-    if (/^═{3,}$/.test(t) || /^={3,}$/.test(t)) {
-      return '<span class="preview-dblline"></span>';
+    if (/^═{2,}$/.test(t) || /^={4,}$/.test(t)) {
+      return '<div class="preview-dbl"></div>';
     }
-    if (/^[・･…]{3,}$/.test(t)) {
-      return '<span class="preview-dotline"></span>';
+    if (/^[・･…]{2,}$/.test(t)) {
+      return '<div class="preview-dot"></div>';
     }
-    return escHtml(line);
-  });
-  return rendered.join('\n');
+    // 行末に罫線がくっついているパターン（テキスト＋罫線）
+    const mixMatch = line.match(/^(.+?)(─{4,}|═{4,}|[・･]{4,})$/);
+    if (mixMatch) {
+      return `<div><span>${escHtml(mixMatch[1])}</span><div class="preview-hr" style="margin-top:-0.5em;"></div></div>`;
+    }
+    // 通常行
+    return `<div>${escHtml(line) || '　'}</div>`;
+  }).join('');
 }
 
 function previewMemo(id) {
