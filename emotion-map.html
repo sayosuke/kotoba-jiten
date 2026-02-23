@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>感情地図</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #f4f2ee;
+  --bg2:     #eceae4;
+  --bg3:     #e2dfd8;
+  --surface: #ffffff;
+  --border:  #d4d0c8;
+  --border2: #b8b4aa;
+  --ink:     #1a1814;
+  --ink2:    #4a4640;
+  --ink3:    #8a8680;
+  --accent:  #1a56e8;
+  --accent2: #0e3ec0;
+  --red:     #d63040;
+  --green:   #1a8050;
+  --amber:   #c07010;
+
+  --cat0:    #1a56e8;
+  --cat1:    #d63040;
+  --cat2:    #1a8050;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Syne', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.hd {
+  height: 44px;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 20px;
+  flex-shrink: 0;
+}
+.logo {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: #fff;
+  text-transform: uppercase;
+}
+.logo span { color: #aaa; font-weight: 400; margin-left: 8px; font-size: 9px; letter-spacing: 0.15em; }
+
+.vtog {
+  display: flex;
+  border: 1px solid #3a3830;
+}
+.vb {
+  padding: 4px 16px;
+  font-family: 'Syne', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: none; border: none; color: #666;
+  cursor: pointer; transition: all 0.12s;
+}
+.vb.on { background: #fff; color: var(--ink); }
+.vb:not(.on):hover { color: #aaa; }
+
+.hdr { margin-left: auto; display: flex; gap: 0; }
+.hbtn {
+  font-family: 'Syne', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0 16px; height: 44px;
+  border: none; border-left: 1px solid #2a2820;
+  background: none; color: #777;
+  cursor: pointer; transition: all 0.12s;
+}
+.hbtn:hover { color: #fff; background: #2a2820; }
+.hbtn.sv { background: var(--accent); color: #fff; border-color: var(--accent); }
+.hbtn.sv:hover { background: var(--accent2); }
+
+/* ── Body ── */
+.body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ── Left panel ── */
+.lp {
+  width: 272px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.ptabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ptab {
+  flex: 1; padding: 9px 4px;
+  font-family: 'Syne', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: none; border: none; color: var(--ink3);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.12s; margin-bottom: -1px;
+}
+.ptab.on { color: var(--accent); border-bottom-color: var(--accent); }
+.ptab:hover:not(.on) { color: var(--ink2); }
+
+.tp { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+.tp.on { display: flex; }
+.tp::-webkit-scrollbar { width: 3px; }
+.tp::-webkit-scrollbar-thumb { background: var(--border); }
+
+.sec { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.slbl {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+
+.pta {
+  width: 100%; height: 136px; padding: 9px 10px;
+  border: 1px solid var(--border2);
+  background: var(--bg);
+  font-family: 'Courier New', monospace;
+  font-size: 10px; line-height: 1.85;
+  color: var(--ink2); resize: none; outline: none;
+}
+.pta:focus { border-color: var(--accent); }
+.pta::placeholder { color: var(--ink3); font-size: 9px; }
+
+.lbtn {
+  width: 100%; margin-top: 7px; padding: 8px;
+  background: var(--ink); border: none;
+  color: #fff; font-family: 'Syne', sans-serif;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; cursor: pointer;
+  transition: background 0.12s;
+}
+.lbtn:hover { background: var(--accent); }
+
+.hint {
+  margin: 0 16px 14px;
+  padding: 9px 11px;
+  background: var(--bg2);
+  border-left: 2px solid var(--accent);
+  font-size: 8.5px; line-height: 2; color: var(--ink3);
+}
+.hint code { font-family: 'Courier New', monospace; color: var(--accent); }
+.hint strong { color: var(--ink2); }
+
+.wcnt { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+.wcnt em { color: var(--accent); font-style: normal; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  font-size: 10px; font-weight: 500; padding: 3px 9px;
+  display: flex; align-items: center; gap: 4px;
+  border: 1px solid; color: inherit;
+}
+.chip-x { background: none; border: none; color: inherit; opacity: 0.4; font-size: 11px; cursor: pointer; line-height: 1; }
+.chip-x:hover { opacity: 1; }
+
+/* Settings */
+.sts { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+.ss { display: flex; flex-direction: column; gap: 6px; }
+.ag { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.f { display: flex; flex-direction: column; gap: 2px; }
+.fl { font-size: 8px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+.fi {
+  padding: 5px 8px; border: 1px solid var(--border2);
+  background: var(--bg); color: var(--ink);
+  font-family: 'Noto Sans JP', sans-serif; font-size: 11px; outline: none;
+}
+.fi:focus { border-color: var(--accent); }
+.cr {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg); border: 1px solid var(--border);
+  padding: 5px 9px; margin-bottom: 4px;
+}
+.csw { width: 8px; height: 8px; flex-shrink: 0; }
+.ci {
+  flex: 1; border: none; background: transparent;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 11px;
+  color: var(--ink); outline: none;
+}
+.cx { background: none; border: none; color: var(--ink3); font-size: 12px; cursor: pointer; }
+.cx:hover { color: var(--red); }
+
+/* ── Right canvas ── */
+.rp { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+.cbar {
+  height: 36px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 14px; gap: 6px;
+  flex-shrink: 0;
+}
+.cbar-l { font-size: 8px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink3); }
+.zb {
+  width: 24px; height: 24px; font-size: 13px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--ink2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s;
+}
+.zb:hover { border-color: var(--accent); color: var(--accent); }
+.zb.t { width: auto; padding: 0 9px; font-size: 8px; font-weight: 700; letter-spacing: 0.1em; }
+.zv { font-size: 9px; color: var(--ink3); min-width: 36px; text-align: center; font-weight: 600; }
+
+.cw {
+  flex: 1; overflow: hidden; position: relative;
+  background: var(--bg);
+}
+#ms { width: 100%; height: 100%; }
+
+/* ── Tooltip ── */
+.tip {
+  position: fixed; z-index: 900; pointer-events: none;
+  background: var(--ink);
+  padding: 12px 14px; min-width: 180px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+  opacity: 0; transition: opacity 0.1s;
+}
+.tip.show { opacity: 1; }
+.tn { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 2px; font-family: 'Noto Sans JP', sans-serif; }
+.tc { font-size: 8px; color: #666; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+.td { width: 5px; height: 5px; flex-shrink: 0; }
+.tbrs { display: flex; flex-direction: column; gap: 5px; }
+.tr { display: flex; align-items: center; gap: 7px; }
+.tl { font-size: 8px; color: #666; width: 28px; letter-spacing: 0.06em; flex-shrink: 0; text-transform: uppercase; }
+.tt { flex: 1; height: 2px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.tf { height: 100%; }
+.tv { font-size: 9px; color: #888; width: 12px; text-align: right; font-weight: 600; }
+.tdr { margin-top: 9px; padding-top: 8px; border-top: 1px solid #2a2820; font-size: 8px; color: #666; letter-spacing: 0.1em; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.tdv { color: #ccc; font-size: 10px; }
+
+.toast {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: #fff;
+  font-family: 'Syne', sans-serif;
+  font-size: 9px; font-weight: 700; padding: 7px 18px; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 999;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="logo">感情地図 <span>Emotion Map</span></div>
+  <div class="vtog">
+    <button class="vb on" id="vs" onclick="setView('s')">Scatter</button>
+    <button class="vb"    id="vn" onclick="setView('n')">Network</button>
+  </div>
+  <div class="hdr">
+    <button class="hbtn" onclick="copySVG()">Copy SVG</button>
+    <button class="hbtn sv" onclick="downloadSVG()">Save</button>
+  </div>
+</div>
+
+<div class="body">
+  <div class="lp">
+    <div class="ptabs">
+      <button class="ptab on" id="ptA" onclick="setPT('A')">Input</button>
+      <button class="ptab"    id="ptB" onclick="setPT('B')">Settings</button>
+    </div>
+
+    <div class="tp on" id="ppA">
+      <div class="sec">
+        <div class="slbl">Paste GPT output</div>
+        <textarea class="pta" id="pa"
+          placeholder="# 単語&#10;歓悦, 強度:8, 内外:7, 主体:5, 持続:漸減&#10;狂喜, 強度:10, 内外:9, 主体:5, 持続:瞬間減衰&#10;&#10;# 関係&#10;歓悦-狂喜, 強度近い&#10;至福-安堵, 内向き系"></textarea>
+        <button class="lbtn" onclick="load()">Load</button>
+      </div>
+      <div class="sec" style="border-bottom:none;">
+        <div class="hint">
+          <strong>単語</strong><br>
+          <code>単語, 強度:1〜10, 内外:1〜10, 主体:1〜10, 持続:タイプ</code><br><br>
+          <strong>関係 (Networkモード)</strong><br>
+          <code>語A-語B, ラベル</code><br><br>
+          持続：<code>瞬間減衰</code>　<code>漸減</code>　<code>遮断</code>　<code>定常</code>
+        </div>
+      </div>
+      <div class="sec" style="flex:1;border-bottom:none;">
+        <div class="wcnt">Loaded — <em id="wc">10</em> words</div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+
+    <div class="tp" id="ppB">
+      <div class="sts">
+        <div class="ss">
+          <div class="slbl">Title</div>
+          <input class="fi" id="cfgT" value="喜びの感情" oninput="render()"/>
+        </div>
+        <div class="ss">
+          <div class="slbl">Axis (Scatter)</div>
+          <div class="ag">
+            <div class="f"><div class="fl">X left</div><input class="fi" id="cXL" value="内向" oninput="render()"/></div>
+            <div class="f"><div class="fl">X right</div><input class="fi" id="cXR" value="外向" oninput="render()"/></div>
+            <div class="f"><div class="fl">Y bottom</div><input class="fi" id="cYB" value="弱" oninput="render()"/></div>
+            <div class="f"><div class="fl">Y top</div><input class="fi" id="cYT" value="強" oninput="render()"/></div>
+            <div class="f"><div class="fl">X name</div><input class="fi" id="cXN" value="内外" oninput="render()"/></div>
+            <div class="f"><div class="fl">Y name</div><input class="fi" id="cYN" value="強度" oninput="render()"/></div>
+          </div>
+        </div>
+        <div class="ss">
+          <div class="slbl">Categories</div>
+          <div id="crs"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rp">
+    <div class="cbar">
+      <span class="cbar-l" id="cbl">Scatter</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:3px;">
+        <button class="zb" onclick="zo()">−</button>
+        <span class="zv" id="zv">100%</span>
+        <button class="zb" onclick="zi()">＋</button>
+        <button class="zb t" onclick="zr()">Reset</button>
+      </div>
+    </div>
+    <div class="cw" id="cw"><svg id="ms"></svg></div>
+  </div>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+let words = [
+  {name:'歓悦',   x:7,y:8, s:5,cat:0,dur:'漸減'},
+  {name:'快哉',   x:8,y:8, s:6,cat:0,dur:'瞬間減衰'},
+  {name:'至福',   x:2,y:6, s:2,cat:1,dur:'遮断'},
+  {name:'愉悦',   x:2,y:4, s:3,cat:1,dur:'遮断'},
+  {name:'狂喜',   x:9,y:10,s:5,cat:0,dur:'瞬間減衰'},
+  {name:'安堵',   x:2,y:3, s:3,cat:1,dur:'遮断'},
+  {name:'欣喜',   x:5,y:5, s:5,cat:2,dur:'漸減'},
+  {name:'陶酔',   x:3,y:6, s:2,cat:1,dur:'漸減'},
+  {name:'有頂天', x:8,y:7, s:6,cat:0,dur:'漸減'},
+  {name:'僥倖',   x:5,y:4, s:4,cat:2,dur:'瞬間減衰'},
+];
+let edges=[
+  {a:'狂喜',b:'歓悦',   l:'強度近い'},
+  {a:'狂喜',b:'有頂天', l:'外向き系'},
+  {a:'歓悦',b:'快哉',   l:'質が近い'},
+  {a:'至福',b:'愉悦',   l:'内向き系'},
+  {a:'至福',b:'安堵',   l:'遮断型'},
+  {a:'愉悦',b:'安堵',   l:'内向き系'},
+  {a:'欣喜',b:'僥倖',   l:'中間域'},
+  {a:'陶酔',b:'至福',   l:'内向き'},
+];
+let cats=[
+  {name:'達成',color:'#1a56e8'},
+  {name:'安心',color:'#d63040'},
+  {name:'幸運',color:'#1a8050'},
+];
+const DUR={'瞬間減衰':'⚡','漸減':'〜','遮断':'◈','定常':'∞'};
+let view='s', zoom=1, npos={};
+
+function setPT(t){
+  ['A','B'].forEach(x=>{
+    document.getElementById('pt'+x).classList.toggle('on',x===t);
+    document.getElementById('pp'+x).classList.toggle('on',x===t);
+  });
+}
+function setView(v){
+  view=v;
+  document.getElementById('vs').classList.toggle('on',v==='s');
+  document.getElementById('vn').classList.toggle('on',v==='n');
+  document.getElementById('cbl').textContent=v==='s'?'Scatter':'Network';
+  if(v==='n') calcLayout();
+  render();
+}
+
+function load(){
+  const raw=document.getElementById('pa').value.trim();
+  if(!raw) return;
+  const lines=raw.split('\n').map(s=>s.trim()).filter(Boolean);
+  let mode='w';
+  const nw=[],ne=[];
+  for(const ln of lines){
+    if(/^#.*単語/.test(ln)){mode='w';continue;}
+    if(/^#.*関係/.test(ln)){mode='e';continue;}
+    if(ln.startsWith('#')) continue;
+    if(mode==='w'){
+      const p=ln.split(',').map(s=>s.trim());
+      if(!p[0]) continue;
+      let w={name:p[0],x:5,y:5,s:5,cat:0,dur:'漸減'};
+      for(let i=1;i<p.length;i++){
+        const m=p[i].match(/^(.+?)[：:]([\s\S]+)$/);
+        if(!m) continue;
+        const k=m[1].trim(),v=m[2].trim();
+        const n=parseInt(v.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)));
+        if(/強度/.test(k)) w.y=cl(n);
+        else if(/内外/.test(k)) w.x=cl(n);
+        else if(/主体/.test(k)) w.s=cl(n);
+        else if(/持続/.test(k)) w.dur=v;
+      }
+      nw.push(w);
+    } else {
+      const m=ln.match(/^(.+?)\s*[-－]\s*(.+?),\s*(.+)$/);
+      if(m) ne.push({a:m[1].trim(),b:m[2].trim(),l:m[3].trim()});
+    }
+  }
+  if(nw.length) words=nw;
+  if(ne.length) edges=ne;
+  npos={};
+  if(view==='n') calcLayout();
+  renderChips(); render();
+  showToast(`${words.length}語 · ${edges.length}関係`);
+}
+function cl(v){return isNaN(v)?5:Math.min(10,Math.max(1,v));}
+
+function renderChips(){
+  document.getElementById('wc').textContent=words.length;
+  document.getElementById('chips').innerHTML=words.map((w,i)=>{
+    const c=cats[w.cat]?.color||'#1a56e8';
+    return `<div class="chip" style="border-color:${c};color:${c};background:${c}10;">
+      ${escH(w.name)}<button class="chip-x" onclick="dw(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+function dw(i){words.splice(i,1);renderChips();if(view==='n')calcLayout();render();}
+
+function renderCatRows(){
+  document.getElementById('crs').innerHTML=cats.map((c,i)=>`
+    <div class="cr">
+      <div class="csw" style="background:${c.color};"></div>
+      <input class="ci" value="${escH(c.name)}" oninput="cats[${i}].name=this.value;render();renderChips();"/>
+      ${cats.length>1?`<button class="cx" onclick="dc(${i})">×</button>`:''}
+    </div>`).join('');
+}
+function dc(i){cats.splice(i,1);words.forEach(w=>{if(w.cat>=cats.length)w.cat=0;});renderCatRows();renderChips();render();}
+
+function gv(id){return document.getElementById(id)?.value||'';}
+
+// ── Network layout: force-directed with collision ──
+function calcLayout(){
+  const el=document.getElementById('cw');
+  const W=el.clientWidth||800,H=el.clientHeight||500;
+  const n=words.length; if(!n) return;
+
+  // node size estimate
+  const nw=w=>w.name.length*13+28;
+  const nh=32;
+
+  // 初期配置：Sunflower配置（重ならない）
+  if(!Object.keys(npos).length){
+    words.forEach((w,i)=>{
+      const angle=i*(2.399)+Math.PI/4; // golden angle
+      const r=60+i*28;
+      npos[w.name]={x:W/2+r*Math.cos(angle),y:H/2+r*Math.sin(angle)};
+    });
+  }
+
+  // clamp
+  const clp=(p,w)=>{
+    p.x=Math.max(nw(w)/2+12,Math.min(W-nw(w)/2-12,p.x));
+    p.y=Math.max(nh/2+12,Math.min(H-nh/2-12,p.y));
+  };
+
+  // force iterations
+  const iters=300;
+  for(let it=0;it<iters;it++){
+    const cool=1-it/iters;
+    const disp={};
+    words.forEach(w=>disp[w.name]={x:0,y:0});
+
+    // repulsion (overlap-aware)
+    for(let i=0;i<words.length;i++){
+      for(let j=i+1;j<words.length;j++){
+        const wi=words[i],wj=words[j];
+        const pi=npos[wi.name],pj=npos[wj.name];
+        let dx=pi.x-pj.x,dy=pi.y-pj.y;
+        const dist=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+        // min separation based on node sizes
+        const minD=(nw(wi)+nw(wj))/2+20;
+        const f=Math.pow(minD,2)/dist;
+        dx/=dist;dy/=dist;
+        disp[wi.name].x+=dx*f;disp[wi.name].y+=dy*f;
+        disp[wj.name].x-=dx*f;disp[wj.name].y-=dy*f;
+      }
+    }
+
+    // center gravity
+    words.forEach(w=>{
+      const p=npos[w.name];
+      disp[w.name].x+=(W/2-p.x)*0.015;
+      disp[w.name].y+=(H/2-p.y)*0.015;
+    });
+
+    // attraction (edges)
+    const k=Math.min(W,H)*0.25;
+    edges.forEach(e=>{
+      const pa=npos[e.a],pb=npos[e.b];
+      if(!pa||!pb) return;
+      let dx=pb.x-pa.x,dy=pb.y-pa.y;
+      const d=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+      const f=d*d/(k*2);
+      dx/=d;dy/=d;
+      disp[e.a].x+=dx*f;disp[e.a].y+=dy*f;
+      disp[e.b].x-=dx*f;disp[e.b].y-=dy*f;
+    });
+
+    // apply
+    const maxMove=40*cool+2;
+    words.forEach(w=>{
+      const d=disp[w.name];
+      const dm=Math.sqrt(d.x*d.x+d.y*d.y);
+      if(dm>0){
+        const step=Math.min(dm,maxMove);
+        npos[w.name].x+=d.x/dm*step;
+        npos[w.name].y+=d.y/dm*step;
+      }
+      clp(npos[w.name],w);
+    });
+  }
+}
+
+// ── Render ──
+function render(){
+  const svg=document.getElementById('ms');
+  const el=document.getElementById('cw');
+  const W=el.clientWidth||800,H=el.clientHeight||500;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.style.transform=`scale(${zoom})`;
+  svg.style.transformOrigin='center center';
+  if(view==='s') renderScatter(svg,W,H);
+  else renderNetwork(svg,W,H);
+}
+
+function cat(i){return cats[i]||{name:'',color:'#1a56e8'};}
+
+function renderScatter(svg,W,H){
+  const PL=68,PR=38,PT=72,PB=64;
+  const CW=W-PL-PR,CH=H-PT-PB;
+  const M=0.07;
+  const px=x=>PL+(M+(x-1)/9*(1-2*M))*CW;
+  const py=y=>PT+CH-(M+(y-1)/9*(1-2*M))*CH;
+
+  const T=gv('cfgT')||'感情地図';
+  const xL=gv('cXL')||'内向',xR=gv('cXR')||'外向';
+  const yB=gv('cYB')||'弱',yT=gv('cYT')||'強';
+  const xN=gv('cXN')||'内外',yN=gv('cYN')||'強度';
+
+  // grid
+  let grid='';
+  [2,4,6,8].forEach(v=>{
+    const gx=px(v),gy=py(v);
+    grid+=`
+      <line x1="${gx}" y1="${PT}" x2="${gx}" y2="${PT+CH}" stroke="#ddd9d0" stroke-width="1"/>
+      <line x1="${PL}" y1="${gy}" x2="${PL+CW}" y2="${gy}" stroke="#ddd9d0" stroke-width="1"/>
+      <text x="${gx}" y="${PT+CH+13}" font-family="Syne,sans-serif" font-size="9" fill="#aaa49a" text-anchor="middle" font-weight="500">${v}</text>
+      <text x="${PL-7}" y="${gy+3.5}" font-family="Syne,sans-serif" font-size="9" fill="#aaa49a" text-anchor="end" font-weight="500">${v}</text>`;
+  });
+
+  // nodes
+  let nodes='';
+  words.forEach(w=>{
+    const cx=px(w.x),cy=py(w.y);
+    const c=cat(w.cat).color;
+    const fw=w.name.length*13+28,fh=32;
+    const info=mk(w,c);
+    nodes+=`
+    <g data-info="${info}" onmouseenter="st(event,this)" onmouseleave="ht()">
+      <rect x="${cx-fw/2}" y="${cy-fh/2}" width="${fw}" height="${fh}"
+        fill="${c}" fill-opacity="0.08" stroke="${c}" stroke-width="1.5"/>
+      <text x="${cx}" y="${cy+5}" font-family="Noto Sans JP,sans-serif" font-size="12" font-weight="700"
+        fill="${c}" text-anchor="middle" pointer-events="none">${escH(w.name)}</text>
+    </g>`;
+  });
+
+  // legend
+  let leg='',lx=PL+2,ly=PT+10;
+  cats.forEach(c=>{
+    const lw=c.name.length*9+22;
+    leg+=`
+      <rect x="${lx}" y="${ly}" width="${lw}" height="16"
+        fill="none" stroke="${c.color}" stroke-width="1"/>
+      <text x="${lx+lw/2}" y="${ly+11.5}" font-family="Syne,sans-serif" font-size="9" font-weight="600"
+        fill="${c.color}" text-anchor="middle">${escH(c.name)}</text>`;
+    lx+=lw+6;
+  });
+
+  // title
+  const tw=T.length*13+40;
+  svg.innerHTML=`
+    <defs>
+      <marker id="ax" markerWidth="6" markerHeight="6" refX="4" refY="2" orient="auto">
+        <path d="M0,0 L0,4 L6,2z" fill="#aaa49a"/>
+      </marker>
+      <marker id="ay" markerWidth="6" markerHeight="6" refX="2" refY="4" orient="auto">
+        <path d="M0,4 L4,4 L2,0z" fill="#aaa49a"/>
+      </marker>
+    </defs>
+    <rect width="${W}" height="${H}" fill="#f4f2ee"/>
+    <rect x="${PL}" y="${PT}" width="${CW}" height="${CH}" fill="#fff" stroke="#d4d0c8" stroke-width="1"/>
+    ${grid}
+    <line x1="${PL}" y1="${PT+CH}" x2="${PL+CW+10}" y2="${PT+CH}" stroke="#aaa49a" stroke-width="1.2" marker-end="url(#ax)"/>
+    <line x1="${PL}" y1="${PT+CH}" x2="${PL}" y2="${PT-10}" stroke="#aaa49a" stroke-width="1.2" marker-end="url(#ay)"/>
+    <text x="${PL+2}" y="${PT+CH+24}" font-family="Noto Sans JP,sans-serif" font-size="10" fill="#8a8680" text-anchor="start">${escH(xL)}</text>
+    <text x="${PL+CW-2}" y="${PT+CH+24}" font-family="Noto Sans JP,sans-serif" font-size="10" fill="#8a8680" text-anchor="end">${escH(xR)}</text>
+    <text x="${PL-8}" y="${PT+CH-2}" font-family="Noto Sans JP,sans-serif" font-size="10" fill="#8a8680" text-anchor="end">${escH(yB)}</text>
+    <text x="${PL-8}" y="${PT+5}" font-family="Noto Sans JP,sans-serif" font-size="10" fill="#8a8680" text-anchor="end">${escH(yT)}</text>
+    <text x="${PL+CW/2}" y="${H-6}" font-family="Syne,sans-serif" font-size="10" font-weight="700" fill="#6a6660" text-anchor="middle" letter-spacing="3">${escH(xN)}</text>
+    <text x="14" y="${PT+CH/2}" font-family="Syne,sans-serif" font-size="10" font-weight="700" fill="#6a6660" text-anchor="middle" writing-mode="tb" letter-spacing="3">${escH(yN)}</text>
+    ${nodes}${leg}
+    <rect x="${W/2-tw/2}" y="10" width="${tw}" height="34" fill="#1a1814"/>
+    <text x="${W/2}" y="33" font-family="Syne,sans-serif" font-size="13" font-weight="800"
+      fill="#fff" text-anchor="middle" letter-spacing="4">${escH(T)}</text>`;
+}
+
+function renderNetwork(svg,W,H){
+  const T=gv('cfgT')||'感情地図';
+
+  function ec(l){
+    if(/強度|激/.test(l)) return '#d63040';
+    if(/内向|遮断|安/.test(l)) return '#1a56e8';
+    if(/外向|動/.test(l)) return '#c07010';
+    if(/近い|似/.test(l)) return '#1a8050';
+    return '#8a8680';
+  }
+
+  // edges first
+  let edgeSvg='';
+  edges.forEach(e=>{
+    const pa=npos[e.a],pb=npos[e.b];
+    if(!pa||!pb) return;
+    const mx=(pa.x+pb.x)/2,my=(pa.y+pb.y)/2;
+    const color=ec(e.l);
+    edgeSvg+=`
+      <line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}"
+        stroke="${color}" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="${mx}" y="${my-5}" font-family="Syne,sans-serif" font-size="8" font-weight="600"
+        fill="${color}" fill-opacity="0.7" text-anchor="middle" letter-spacing="0.05em">${escH(e.l)}</text>`;
+  });
+
+  // nodes
+  let nodes='';
+  words.forEach(w=>{
+    const p=npos[w.name];
+    if(!p) return;
+    const c=cat(w.cat).color;
+    const fw=w.name.length*13+28,fh=32;
+    const info=mk(w,c);
+    nodes+=`
+    <g data-info="${info}" onmouseenter="st(event,this)" onmouseleave="ht()">
+      <rect x="${p.x-fw/2}" y="${p.y-fh/2}" width="${fw}" height="${fh}"
+        fill="${c}" fill-opacity="0.08" stroke="${c}" stroke-width="1.5"/>
+      <text x="${p.x}" y="${p.y+5}" font-family="Noto Sans JP,sans-serif" font-size="12" font-weight="700"
+        fill="${c}" text-anchor="middle" pointer-events="none">${escH(w.name)}</text>
+    </g>`;
+  });
+
+  // legend
+  let leg='',lx=12,ly=H-28;
+  cats.forEach(c=>{
+    const lw=c.name.length*9+22;
+    leg+=`
+      <rect x="${lx}" y="${ly}" width="${lw}" height="16" fill="none" stroke="${c.color}" stroke-width="1"/>
+      <text x="${lx+lw/2}" y="${ly+11.5}" font-family="Syne,sans-serif" font-size="9" font-weight="600"
+        fill="${c.color}" text-anchor="middle">${escH(c.name)}</text>`;
+    lx+=lw+6;
+  });
+
+  const tw=T.length*13+40;
+  svg.innerHTML=`
+    <rect width="${W}" height="${H}" fill="#f4f2ee"/>
+    ${edgeSvg}${nodes}${leg}
+    <rect x="${W/2-tw/2}" y="10" width="${tw}" height="34" fill="#1a1814"/>
+    <text x="${W/2}" y="33" font-family="Syne,sans-serif" font-size="13" font-weight="800"
+      fill="#fff" text-anchor="middle" letter-spacing="4">${escH(T)}</text>`;
+}
+
+// tooltip
+function mk(w,c){
+  return escAttr(JSON.stringify({
+    name:w.name,x:w.x,y:w.y,s:w.s||5,
+    dur:w.dur||'漸減',color:c,cn:cats[w.cat]?.name||''
+  }));
+}
+function st(e,el){
+  const tip=document.getElementById('tip');
+  const d=JSON.parse(el.dataset.info);
+  const xN=gv('cXN')||'内外',yN=gv('cYN')||'強度';
+  tip.innerHTML=`
+    <div class="tn">${escH(d.name)}</div>
+    <div class="tc"><div class="td" style="background:${d.color};"></div>${escH(d.cn)}</div>
+    <div class="tbrs">
+      ${bar(yN,d.y,d.color)}${bar(xN,d.x,d.color)}${bar('主体',d.s,'#777')}
+    </div>
+    <div class="tdr">持続 <span class="tdv">${DUR[d.dur]||'?'} ${escH(d.dur)}</span></div>`;
+  tip.style.display='block';
+  const tw=tip.offsetWidth,th=tip.offsetHeight;
+  let lx=e.clientX+14,ly=e.clientY-12;
+  if(lx+tw>window.innerWidth-6) lx=e.clientX-tw-14;
+  if(ly+th>window.innerHeight-6) ly=window.innerHeight-th-6;
+  if(ly<4) ly=4;
+  tip.style.left=lx+'px';tip.style.top=ly+'px';
+  tip.classList.add('show');
+}
+function ht(){document.getElementById('tip').classList.remove('show');}
+function bar(l,v,c){
+  return `<div class="tr">
+    <span class="tl">${escH(l)}</span>
+    <div class="tt"><div class="tf" style="width:${v*10}%;background:${c};"></div></div>
+    <span class="tv">${v}</span>
+  </div>`;
+}
+
+// zoom
+function zi(){zoom=Math.min(2.5,zoom+0.1);az();}
+function zo(){zoom=Math.max(0.3,zoom-0.1);az();}
+function zr(){zoom=1;az();}
+function az(){
+  document.getElementById('ms').style.transform=`scale(${zoom})`;
+  document.getElementById('ms').style.transformOrigin='center center';
+  document.getElementById('zv').textContent=Math.round(zoom*100)+'%';
+}
+
+// save
+function getSVG(){return '<svg xmlns="http://www.w3.org/2000/svg"'+document.getElementById('ms').outerHTML.slice(4);}
+function downloadSVG(){
+  const t=(gv('cfgT')||'感情地図').replace(/\s/g,'_');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([getSVG()],{type:'image/svg+xml'}));
+  a.download=t+'_'+view+'.svg';a.click();showToast('Saved');
+}
+function copySVG(){navigator.clipboard.writeText(getSVG()).then(()=>showToast('Copied'));}
+function showToast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+
+// init
+renderCatRows();renderChips();calcLayout();render();
+window.addEventListener('resize',()=>{if(view==='n'){npos={};calcLayout();}render();});
+</script>
+</body>
+</html>
