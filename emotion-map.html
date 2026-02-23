@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>感情地図</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:   #f8f5f0;
+  --paper2:  #f0ece4;
+  --paper3:  #e8e2d8;
+  --border:  #d8d0c4;
+  --border2: #c4b8a8;
+  --ink:     #1a1410;
+  --ink2:    #3a3028;
+  --ink3:    #7a6e60;
+  --ink4:    #a09080;
+  --accent:  #8b4513;
+  --accent2: #a0522d;
+  --accent3: #6b3410;
+  --gold:    #c4963a;
+  --gold2:   #ddb860;
+  --hover:   rgba(139,69,19,0.06);
+  --active-bg: rgba(139,69,19,0.12);
+
+  /* カテゴリ色（atmos系） */
+  --c-joy:    #c4763a;
+  --c-sad:    #4a6b9a;
+  --c-anger:  #9a3a3a;
+  --c-fear:   #6a4a9a;
+  --c-lone:   #5a7a6a;
+  --c-nostl:  #8a7a4a;
+  --c-sens:   #9a4a6a;
+  --c-deep:   #4a6a5a;
+  --c-myst:   #5a4a7a;
+  --c-light:  #7a9a4a;
+  --c-calm:   #4a7a8a;
+  --c-stern:  #6a5a4a;
+  --c-wild:   #9a5a3a;
+  --c-fade:   #8a8a9a;
+  --c-fierce: #8a3a4a;
+  --c-default:#7a7060;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── ヘッダー ── */
+.header {
+  height: 46px;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 18px;
+  flex-shrink: 0;
+  border-bottom: 2px solid var(--gold);
+}
+
+.header-logo {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f0ece4;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.header-logo span {
+  font-size: 9px;
+  font-weight: 300;
+  color: var(--gold2);
+  letter-spacing: 0.2em;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+.header-nav {
+  display: flex;
+  gap: 0;
+  margin-left: 10px;
+}
+.nav-link {
+  font-size: 10px;
+  color: #a09080;
+  text-decoration: none;
+  padding: 0 14px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.06em;
+  border-left: 1px solid #2a2418;
+  transition: all 0.15s;
+}
+.nav-link:hover { color: var(--gold2); background: rgba(196,150,58,0.08); }
+
+.view-toggle {
+  display: flex;
+  border: 1px solid #3a3020;
+  margin-left: 4px;
+}
+.vbtn {
+  padding: 4px 18px;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  background: none; border: none; color: #6a6050;
+  cursor: pointer; transition: all 0.12s;
+}
+.vbtn.on { background: var(--gold); color: var(--ink); font-weight: 500; }
+.vbtn:not(.on):hover { color: var(--gold2); }
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0;
+}
+.hbtn {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 0 18px;
+  height: 46px;
+  border: none;
+  border-left: 1px solid #2a2418;
+  background: none;
+  color: #7a6a58;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.hbtn:hover { color: #f0ece4; background: rgba(255,255,255,0.05); }
+.hbtn.primary {
+  background: var(--accent);
+  color: #f8f5f0;
+  border-color: var(--accent3);
+}
+.hbtn.primary:hover { background: var(--accent2); }
+
+/* ── メインレイアウト ── */
+.body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ── 左パネル ── */
+.lp {
+  width: 260px; flex-shrink: 0;
+  background: var(--paper);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--paper2);
+}
+.ptab {
+  flex: 1;
+  padding: 9px 4px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  background: none; border: none;
+  color: var(--ink4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.12s;
+  margin-bottom: -1px;
+}
+.ptab.on { color: var(--accent); border-bottom-color: var(--accent); }
+.ptab:hover:not(.on) { color: var(--ink2); }
+
+.panel-body { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+.panel-body.on { display: flex; }
+.panel-body::-webkit-scrollbar { width: 3px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+.psec {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.psec:last-child { border-bottom: none; }
+
+.sec-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--ink4);
+  margin-bottom: 8px;
+  text-transform: none;
+}
+
+/* 連携ボタン */
+.connect-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--accent);
+  color: #f8f5f0;
+  border: none;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.connect-btn:hover { background: var(--accent2); }
+.connect-btn:active { background: var(--accent3); }
+.connect-info {
+  margin-top: 8px;
+  font-size: 10px;
+  color: var(--ink4);
+  line-height: 1.6;
+}
+.connect-count {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--accent);
+  font-family: 'Noto Serif JP', serif;
+}
+
+/* 手入力セクション */
+.manual-label {
+  font-size: 9px;
+  color: var(--ink4);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+.manual-ta {
+  width: 100%;
+  height: 110px;
+  padding: 8px 10px;
+  border: 1px solid var(--border2);
+  background: var(--paper2);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 10px;
+  line-height: 1.8;
+  color: var(--ink2);
+  resize: none;
+  outline: none;
+}
+.manual-ta:focus { border-color: var(--accent); }
+.manual-ta::placeholder { color: var(--ink4); font-size: 9px; }
+.load-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px;
+  background: var(--ink2);
+  border: none;
+  color: #f0ece4;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.load-btn:hover { background: var(--accent); }
+
+/* 語チップ */
+.word-count {
+  font-size: 9px;
+  color: var(--ink4);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+.word-count em { color: var(--accent); font-style: normal; font-family: 'Noto Serif JP', serif; }
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip {
+  font-size: 10px;
+  padding: 3px 8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid;
+  border-radius: 1px;
+  font-family: 'Noto Serif JP', serif;
+}
+.chip-x {
+  background: none; border: none;
+  color: inherit; opacity: 0.4;
+  font-size: 11px; cursor: pointer; line-height: 1;
+  padding: 0;
+}
+.chip-x:hover { opacity: 1; }
+
+/* 設定 */
+.settings-form { display: flex; flex-direction: column; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--ink4);
+}
+.field-input {
+  padding: 5px 8px;
+  border: 1px solid var(--border2);
+  background: var(--paper2);
+  color: var(--ink);
+  font-family: 'Noto Serif JP', serif;
+  font-size: 11px;
+  outline: none;
+}
+.field-input:focus { border-color: var(--accent); }
+.axis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* カテゴリ色 */
+.cat-rows { display: flex; flex-direction: column; gap: 4px; }
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper2);
+  border: 1px solid var(--border);
+  padding: 5px 9px;
+}
+.cat-swatch { width: 8px; height: 8px; flex-shrink: 0; }
+.cat-input {
+  flex: 1; border: none; background: transparent;
+  font-family: 'Noto Serif JP', serif; font-size: 11px;
+  color: var(--ink); outline: none;
+}
+.cat-del {
+  background: none; border: none;
+  color: var(--ink4); font-size: 12px; cursor: pointer;
+}
+.cat-del:hover { color: var(--accent); }
+.add-cat-btn {
+  margin-top: 4px;
+  padding: 5px 10px;
+  border: 1px dashed var(--border2);
+  background: none;
+  color: var(--ink4);
+  font-size: 10px;
+  cursor: pointer;
+  width: 100%;
+  font-family: 'Noto Serif JP', serif;
+  transition: all 0.12s;
+}
+.add-cat-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* フィルター */
+.filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.filter-chip {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--ink3);
+  cursor: pointer;
+  font-family: 'Noto Serif JP', serif;
+  transition: all 0.1s;
+}
+.filter-chip.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #f8f5f0;
+}
+
+/* ── 右キャンバス ── */
+.rp { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+.canvas-bar {
+  height: 36px;
+  background: var(--paper2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.canvas-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink4);
+  font-family: 'Noto Serif JP', serif;
+}
+.zoom-ctrl {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.zb {
+  width: 24px; height: 24px;
+  font-size: 13px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  color: var(--ink3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+.zb:hover { border-color: var(--accent); color: var(--accent); }
+.zb.wide { width: auto; padding: 0 10px; font-size: 10px; letter-spacing: 0.05em; }
+.zoom-val {
+  font-size: 10px;
+  color: var(--ink4);
+  min-width: 36px;
+  text-align: center;
+}
+
+.canvas-wrap {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: var(--paper);
+  cursor: default;
+}
+#ms { width: 100%; height: 100%; }
+
+/* ── ポップアップ ── */
+.popup {
+  position: fixed;
+  z-index: 900;
+  pointer-events: none;
+  background: var(--ink);
+  padding: 14px 16px;
+  min-width: 200px;
+  max-width: 280px;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.28);
+  opacity: 0;
+  transition: opacity 0.1s;
+  border-top: 2px solid var(--gold);
+}
+.popup.show { opacity: 1; }
+.popup-word {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #f0ece4;
+  margin-bottom: 2px;
+  letter-spacing: 0.05em;
+}
+.popup-cat {
+  font-size: 9px;
+  color: var(--gold2);
+  letter-spacing: 0.15em;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.popup-dot { width: 5px; height: 5px; flex-shrink: 0; }
+.popup-bars { display: flex; flex-direction: column; gap: 5px; }
+.popup-bar-row { display: flex; align-items: center; gap: 7px; }
+.popup-bar-label { font-size: 8px; color: #6a6050; width: 28px; flex-shrink: 0; letter-spacing: 0.06em; }
+.popup-bar-track { flex: 1; height: 2px; background: rgba(255,255,255,0.1); overflow: hidden; }
+.popup-bar-fill { height: 100%; }
+.popup-bar-val { font-size: 9px; color: #888; width: 12px; text-align: right; font-weight: 500; }
+.popup-dur {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2418;
+  font-size: 8px;
+  color: #6a6050;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.popup-dur-val { color: #d4c8b0; font-size: 11px; }
+.popup-memo {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #2a2418;
+  font-size: 10px;
+  color: #b0a898;
+  line-height: 1.6;
+  font-family: 'Noto Serif JP', serif;
+}
+.popup-tags {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.popup-tag {
+  font-size: 8px;
+  padding: 1px 5px;
+  border: 1px solid #3a3020;
+  color: var(--gold2);
+  letter-spacing: 0.05em;
+}
+.popup-atmos {
+  margin-top: 5px;
+  font-size: 9px;
+  color: #8a7860;
+}
+
+/* ── トースト ── */
+.toast {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #f0ece4;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 8px 20px;
+  border-top: 1px solid var(--gold);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 999;
+}
+.toast.show { opacity: 1; }
+
+/* ── ヒント ── */
+.hint-box {
+  background: var(--paper2);
+  border-left: 2px solid var(--accent);
+  padding: 8px 10px;
+  font-size: 9px;
+  line-height: 1.9;
+  color: var(--ink4);
+  margin-top: 4px;
+}
+.hint-box code {
+  font-family: 'Courier New', monospace;
+  color: var(--accent2);
+  font-size: 8.5px;
+}
+.hint-box strong { color: var(--ink3); }
+
+/* 空状態 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--ink4);
+}
+.empty-icon { font-size: 32px; opacity: 0.3; }
+.empty-text { font-size: 12px; font-family: 'Noto Serif JP', serif; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    感情地図
+    <span>Emotion Map</span>
+  </div>
+  <div class="view-toggle">
+    <button class="vbtn on" id="vs" onclick="setView('s')">散布図</button>
+    <button class="vbtn"    id="vn" onclick="setView('n')">関係図</button>
+  </div>
+  <nav class="header-nav">
+    <a class="nav-link" href="index.html">← ことば事典</a>
+    <a class="nav-link" href="craft.html">創作ノート</a>
+  </nav>
+  <div class="header-actions">
+    <button class="hbtn" onclick="copySVG()">SVGをコピー</button>
+    <button class="hbtn primary" onclick="downloadSVG()">保存</button>
+  </div>
+</div>
+
+<div class="body">
+  <!-- 左パネル -->
+  <div class="lp">
+    <div class="panel-tabs">
+      <button class="ptab on" id="ptA" onclick="setPT('A')">データ</button>
+      <button class="ptab"    id="ptB" onclick="setPT('B')">設定</button>
+    </div>
+
+    <!-- データパネル -->
+    <div class="panel-body on" id="ppA">
+
+      <!-- 連携セクション -->
+      <div class="psec">
+        <div class="sec-label">ことば事典から読み込む</div>
+        <button class="connect-btn" onclick="loadFromJiten()">
+          📚 事典のデータを読み込む
+        </button>
+        <div class="connect-info">
+          localStorageからデータを自動取得してプロットします
+        </div>
+        <span class="connect-count" id="connectCount"></span>
+      </div>
+
+      <!-- フィルター -->
+      <div class="psec" id="filterSec" style="display:none;">
+        <div class="sec-label">絞り込み（空気感）</div>
+        <div class="filter-chips" id="atmosFilter"></div>
+        <div style="margin-top:8px;">
+          <div class="sec-label">グループ</div>
+          <div class="filter-chips" id="groupFilter"></div>
+        </div>
+      </div>
+
+      <!-- 手入力セクション -->
+      <div class="psec">
+        <div class="sec-label">手動入力</div>
+        <div class="manual-label">形式：単語, 強度:1〜10, 内外:1〜10, 持続:タイプ</div>
+        <textarea class="manual-ta" id="pa"
+          placeholder="# 単語&#10;歓悦, 強度:8, 内外:7, 持続:漸減&#10;狂喜, 強度:10, 内外:9, 持続:瞬間減衰&#10;&#10;# 関係&#10;歓悦-狂喜, 強度近い"></textarea>
+        <button class="load-btn" onclick="loadManual()">読み込む</button>
+        <div class="hint-box" style="margin-top:8px;">
+          <strong>単語：</strong><code>語, 強度:1〜10, 内外:1〜10</code><br>
+          <strong>関係：</strong><code>語A-語B, ラベル</code><br>
+          持続：<code>瞬間減衰 漸減 遮断 定常</code>
+        </div>
+      </div>
+
+      <!-- 語リスト -->
+      <div class="psec" style="flex:1;">
+        <div class="word-count">表示中 — <em id="wc">0</em> 語</div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+
+    <!-- 設定パネル -->
+    <div class="panel-body" id="ppB">
+      <div class="psec">
+        <div class="settings-form">
+          <div class="field">
+            <div class="field-label">タイトル</div>
+            <input class="field-input" id="cfgT" value="感情語の地図" oninput="render()"/>
+          </div>
+          <div class="field">
+            <div class="field-label">軸の設定（散布図）</div>
+            <div class="axis-grid">
+              <div class="field">
+                <div class="field-label">X 左端</div>
+                <input class="field-input" id="cXL" value="内向" oninput="render()"/>
+              </div>
+              <div class="field">
+                <div class="field-label">X 右端</div>
+                <input class="field-input" id="cXR" value="外向" oninput="render()"/>
+              </div>
+              <div class="field">
+                <div class="field-label">Y 下端</div>
+                <input class="field-input" id="cYB" value="弱" oninput="render()"/>
+              </div>
+              <div class="field">
+                <div class="field-label">Y 上端</div>
+                <input class="field-input" id="cYT" value="強" oninput="render()"/>
+              </div>
+              <div class="field">
+                <div class="field-label">X 軸名</div>
+                <input class="field-input" id="cXN" value="内外" oninput="render()"/>
+              </div>
+              <div class="field">
+                <div class="field-label">Y 軸名</div>
+                <input class="field-input" id="cYN" value="強度" oninput="render()"/>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-label">カテゴリ</div>
+            <div class="cat-rows" id="catRows"></div>
+            <button class="add-cat-btn" onclick="addCat()">＋ カテゴリを追加</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- キャンバス -->
+  <div class="rp">
+    <div class="canvas-bar">
+      <span class="canvas-label" id="cbl">散布図</span>
+      <div class="zoom-ctrl">
+        <button class="zb" onclick="zo()">−</button>
+        <span class="zoom-val" id="zv">100%</span>
+        <button class="zb" onclick="zi()">＋</button>
+        <button class="zb wide" onclick="zr()">リセット</button>
+      </div>
+    </div>
+    <div class="canvas-wrap" id="cw">
+      <svg id="ms"></svg>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🗺️</div>
+        <div class="empty-text">「事典から読み込む」または手動入力で語を追加してください</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="popup" id="popup"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── データ ──
+let words = [];
+let edges = [];
+let cats = [
+  {name:'喜び系', color:'#c4763a'},
+  {name:'静穏系', color:'#4a7a8a'},
+  {name:'深重系', color:'#5a4a7a'},
+];
+const DUR = {'瞬間減衰':'⚡','漸減':'〜','遮断':'◈','定常':'∞'};
+let view = 's', zoom = 1, npos = {};
+let activeAtmos = new Set();
+let activeGroups = new Set();
+
+// atmos→カテゴリ色のマッピング
+const ATMOS_COLOR = {
+  '喜':'#c4763a','哀':'#4a6b9a','怒':'#9a3a3a','恐':'#6a4a9a',
+  '孤':'#5a7a6a','懐':'#8a7a4a','艶':'#9a4a6a','渋':'#4a6a5a',
+  '幽':'#5a4a7a','陽':'#7a9a4a','静':'#4a7a8a','厳':'#6a5a4a',
+  '狂':'#9a5a3a','儚':'#8a8a9a','烈':'#8a3a4a'
+};
+const STRENGTH_ORDER = {'弱':2,'中':5,'強':7,'極':10};
+const DENSITY_ORDER  = {'ライト':3,'ミドル':5,'ディープ':8};
+
+// ── ことば事典連携 ──
+function loadFromJiten() {
+  try {
+    const raw = localStorage.getItem('kotoba_jiten_v2');
+    if (!raw) {
+      showToast('事典データが見つかりません。先にことば事典でデータを追加してください。');
+      return;
+    }
+    const data = JSON.parse(raw);
+    const jitenWords = (data.words || []);
+    if (!jitenWords.length) {
+      showToast('語彙データが空です');
+      return;
+    }
+
+    // グループ(searchGroup)とatmosからカテゴリを自動生成
+    const groups = [...new Set(jitenWords.map(w => w.searchGroup).filter(Boolean))];
+    const atmosList = [...new Set(jitenWords.flatMap(w => (w.atmos||'').split(',').map(s=>s.trim()).filter(Boolean)))];
+
+    // カテゴリをatmosから生成
+    if (atmosList.length > 0) {
+      cats = atmosList.map(a => ({name: a, color: ATMOS_COLOR[a] || '#7a7060'}));
+    }
+    renderCatRows();
+
+    // 語をマッピング
+    words = jitenWords.map(w => {
+      const y = STRENGTH_ORDER[w.strength] || 5;
+      const x = DENSITY_ORDER[w.density]   || 5;
+      const s = w.subcategory === 'コア' ? 7 : 4;
+
+      // atmos→cat
+      const firstAtmos = (w.atmos||'').split(',')[0]?.trim() || '';
+      const catIdx = cats.findIndex(c => c.name === firstAtmos);
+
+      return {
+        name:  w.word || '?',
+        x, y, s,
+        cat:   catIdx >= 0 ? catIdx : 0,
+        dur:   densityToDur(w.density),
+        // 元データ保持
+        reading: w.reading || '',
+        memo:   w.memo || '',
+        note:   w.note || '',
+        atmos:  w.atmos || '',
+        userTags: w.userTags || [],
+        group:  w.searchGroup || '',
+        strength: w.strength || '',
+        density:  w.density  || '',
+      };
+    });
+    edges = [];
+
+    // 同じsearchGroup内の語を関係エッジで繋ぐ
+    const groupMap = {};
+    words.forEach(w => {
+      if (!w.group) return;
+      if (!groupMap[w.group]) groupMap[w.group] = [];
+      groupMap[w.group].push(w.name);
+    });
+    Object.entries(groupMap).forEach(([grp, names]) => {
+      for (let i = 0; i < names.length - 1; i++) {
+        edges.push({a: names[i], b: names[i+1], l: grp});
+      }
+    });
+
+    // フィルターUI更新
+    updateFilterUI(atmosList, groups);
+    document.getElementById('filterSec').style.display = 'block';
+    document.getElementById('connectCount').textContent = `✓ ${words.length} 語を読み込みました`;
+
+    npos = {};
+    if (view === 'n') calcLayout();
+    renderChips(); render();
+    showToast(`${words.length} 語を事典から読み込みました`);
+  } catch(e) {
+    showToast('読み込みエラー: ' + e.message);
+    console.error(e);
+  }
+}
+
+function densityToDur(density) {
+  if (density === 'ライト') return '瞬間減衰';
+  if (density === 'ミドル') return '漸減';
+  if (density === 'ディープ') return '遮断';
+  return '漸減';
+}
+
+function updateFilterUI(atmosList, groups) {
+  const af = document.getElementById('atmosFilter');
+  af.innerHTML = ['（すべて）', ...atmosList].map((a, i) => {
+    const isAll = i === 0;
+    return `<button class="filter-chip ${isAll && activeAtmos.size===0 ? 'on' : ''}"
+      onclick="toggleAtmos('${a}')">${a}</button>`;
+  }).join('');
+
+  const gf = document.getElementById('groupFilter');
+  gf.innerHTML = groups.map(g =>
+    `<button class="filter-chip ${activeGroups.has(g) ? 'on' : ''}"
+      onclick="toggleGroup('${escH(g)}')">${escH(g)}</button>`
+  ).join('');
+}
+
+function toggleAtmos(a) {
+  if (a === '（すべて）') {
+    activeAtmos.clear();
+  } else {
+    if (activeAtmos.has(a)) activeAtmos.delete(a);
+    else activeAtmos.add(a);
+  }
+  applyFilter();
+}
+
+function toggleGroup(g) {
+  if (activeGroups.has(g)) activeGroups.delete(g);
+  else activeGroups.add(g);
+  applyFilter();
+}
+
+function applyFilter() {
+  // フィルター再描画
+  const all = document.querySelectorAll('#atmosFilter .filter-chip');
+  all.forEach(btn => {
+    const t = btn.textContent;
+    if (t === '（すべて）') btn.classList.toggle('on', activeAtmos.size === 0);
+    else btn.classList.toggle('on', activeAtmos.has(t));
+  });
+  document.querySelectorAll('#groupFilter .filter-chip').forEach(btn => {
+    btn.classList.toggle('on', activeGroups.has(btn.textContent));
+  });
+  npos = {};
+  if (view === 'n') calcLayout();
+  render();
+}
+
+function filteredWords() {
+  return words.filter(w => {
+    if (activeAtmos.size > 0) {
+      const wAtmos = (w.atmos||'').split(',').map(s=>s.trim()).filter(Boolean);
+      if (!wAtmos.some(a => activeAtmos.has(a))) return false;
+    }
+    if (activeGroups.size > 0) {
+      if (!activeGroups.has(w.group)) return false;
+    }
+    return true;
+  });
+}
+
+// ── 手動入力 ──
+function loadManual() {
+  const raw = document.getElementById('pa').value.trim();
+  if (!raw) return;
+  const lines = raw.split('\n').map(s => s.trim()).filter(Boolean);
+  let mode = 'w';
+  const nw = [], ne = [];
+  for (const ln of lines) {
+    if (/^#.*単語/.test(ln)) { mode='w'; continue; }
+    if (/^#.*関係/.test(ln)) { mode='e'; continue; }
+    if (ln.startsWith('#')) continue;
+    if (mode === 'w') {
+      const p = ln.split(',').map(s => s.trim());
+      if (!p[0]) continue;
+      let w = {name:p[0], x:5, y:5, s:5, cat:0, dur:'漸減', memo:'', atmos:'', userTags:[], group:''};
+      for (let i = 1; i < p.length; i++) {
+        const m = p[i].match(/^(.+?)[：:]([\s\S]+)$/);
+        if (!m) continue;
+        const k = m[1].trim(), v = m[2].trim();
+        const n = parseInt(v.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0)-0xFEE0)));
+        if (/強度/.test(k)) w.y = cl(n);
+        else if (/内外/.test(k)) w.x = cl(n);
+        else if (/主体/.test(k)) w.s = cl(n);
+        else if (/持続/.test(k)) w.dur = v;
+      }
+      nw.push(w);
+    } else {
+      const m = ln.match(/^(.+?)\s*[-－]\s*(.+?),\s*(.+)$/);
+      if (m) ne.push({a:m[1].trim(), b:m[2].trim(), l:m[3].trim()});
+    }
+  }
+  if (nw.length) words = nw;
+  if (ne.length) edges = ne;
+  document.getElementById('filterSec').style.display = 'none';
+  npos = {};
+  if (view === 'n') calcLayout();
+  renderChips(); render();
+  showToast(`${words.length} 語 · ${edges.length} 関係`);
+}
+function cl(v) { return isNaN(v) ? 5 : Math.min(10, Math.max(1, v)); }
+
+// ── パネル切替 ──
+function setPT(t) {
+  ['A','B'].forEach(x => {
+    document.getElementById('pt'+x).classList.toggle('on', x===t);
+    document.getElementById('pp'+x).classList.toggle('on', x===t);
+  });
+}
+function setView(v) {
+  view = v;
+  document.getElementById('vs').classList.toggle('on', v==='s');
+  document.getElementById('vn').classList.toggle('on', v==='n');
+  document.getElementById('cbl').textContent = v==='s' ? '散布図' : '関係図';
+  if (v === 'n') calcLayout();
+  render();
+}
+
+// ── チップ ──
+function renderChips() {
+  const fw = filteredWords();
+  document.getElementById('wc').textContent = fw.length;
+  document.getElementById('emptyState').style.display = words.length ? 'none' : 'flex';
+  document.getElementById('chips').innerHTML = words.map((w, i) => {
+    const c = cats[w.cat]?.color || '#7a7060';
+    return `<div class="chip" style="border-color:${c};color:${c};background:${c}18;">
+      ${escH(w.name)}<button class="chip-x" onclick="dw(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+function dw(i) { words.splice(i,1); renderChips(); if(view==='n') calcLayout(); render(); }
+
+// ── カテゴリ ──
+function renderCatRows() {
+  document.getElementById('catRows').innerHTML = cats.map((c,i) => `
+    <div class="cat-row">
+      <div class="cat-swatch" style="background:${c.color};"></div>
+      <input class="cat-input" value="${escH(c.name)}" oninput="cats[${i}].name=this.value;render();renderChips();"/>
+      ${cats.length>1?`<button class="cat-del" onclick="delCat(${i})">×</button>`:''}
+    </div>`).join('');
+}
+function delCat(i) {
+  cats.splice(i,1);
+  words.forEach(w => { if(w.cat>=cats.length) w.cat=0; });
+  renderCatRows(); renderChips(); render();
+}
+function addCat() {
+  cats.push({name:'新カテゴリ', color:'#7a7060'});
+  renderCatRows();
+}
+function gv(id) { return document.getElementById(id)?.value || ''; }
+
+// ── ネットワークレイアウト ──
+function calcLayout() {
+  const el = document.getElementById('cw');
+  const W = el.clientWidth||800, H = el.clientHeight||500;
+  const fw = filteredWords();
+  if (!fw.length) return;
+  const nw = w => w.name.length*13+28, nh = 32;
+  if (!Object.keys(npos).length) {
+    fw.forEach((w,i) => {
+      const angle = i*2.399+Math.PI/4;
+      const r = 60+i*28;
+      npos[w.name] = {x:W/2+r*Math.cos(angle), y:H/2+r*Math.sin(angle)};
+    });
+  }
+  const clp = (p,w) => {
+    p.x = Math.max(nw(w)/2+12, Math.min(W-nw(w)/2-12, p.x));
+    p.y = Math.max(nh/2+12, Math.min(H-nh/2-12, p.y));
+  };
+  for (let it=0; it<300; it++) {
+    const cool = 1-it/300;
+    const disp = {};
+    fw.forEach(w => disp[w.name]={x:0,y:0});
+    for (let i=0; i<fw.length; i++) {
+      for (let j=i+1; j<fw.length; j++) {
+        const wi=fw[i],wj=fw[j];
+        const pi=npos[wi.name],pj=npos[wj.name];
+        if(!pi||!pj) continue;
+        let dx=pi.x-pj.x, dy=pi.y-pj.y;
+        const dist=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+        const minD=(nw(wi)+nw(wj))/2+20;
+        const f=Math.pow(minD,2)/dist;
+        dx/=dist; dy/=dist;
+        disp[wi.name].x+=dx*f; disp[wi.name].y+=dy*f;
+        disp[wj.name].x-=dx*f; disp[wj.name].y-=dy*f;
+      }
+    }
+    fw.forEach(w => {
+      const p=npos[w.name];
+      if(!p) return;
+      disp[w.name].x+=(W/2-p.x)*0.015;
+      disp[w.name].y+=(H/2-p.y)*0.015;
+    });
+    const k=Math.min(W,H)*0.25;
+    edges.forEach(e => {
+      const pa=npos[e.a],pb=npos[e.b];
+      if(!pa||!pb) return;
+      let dx=pb.x-pa.x, dy=pb.y-pa.y;
+      const d=Math.max(Math.sqrt(dx*dx+dy*dy),1);
+      const f=d*d/(k*2);
+      dx/=d; dy/=d;
+      disp[e.a].x+=dx*f; disp[e.a].y+=dy*f;
+      disp[e.b].x-=dx*f; disp[e.b].y-=dy*f;
+    });
+    const maxMove = 40*cool+2;
+    fw.forEach(w => {
+      const d=disp[w.name];
+      if(!d) return;
+      const dm=Math.sqrt(d.x*d.x+d.y*d.y);
+      if(dm>0) {
+        const step=Math.min(dm,maxMove);
+        if(!npos[w.name]) npos[w.name]={x:W/2,y:H/2};
+        npos[w.name].x+=d.x/dm*step;
+        npos[w.name].y+=d.y/dm*step;
+      }
+      if(npos[w.name]) clp(npos[w.name],w);
+    });
+  }
+}
+
+// ── レンダリング ──
+function render() {
+  const svg = document.getElementById('ms');
+  const el = document.getElementById('cw');
+  const W = el.clientWidth||800, H = el.clientHeight||500;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.transform = `scale(${zoom})`;
+  svg.style.transformOrigin = 'center center';
+  const fw = filteredWords();
+  if (!fw.length && words.length === 0) { svg.innerHTML=''; return; }
+  if (view === 's') renderScatter(svg, W, H, fw);
+  else renderNetwork(svg, W, H, fw);
+}
+
+function cat(i) { return cats[i] || {name:'', color:'#7a7060'}; }
+
+function renderScatter(svg, W, H, fw) {
+  const PL=72, PR=40, PT=74, PB=66;
+  const CW=W-PL-PR, CH=H-PT-PB;
+  const M=0.07;
+  const px = x => PL+(M+(x-1)/9*(1-2*M))*CW;
+  const py = y => PT+CH-(M+(y-1)/9*(1-2*M))*CH;
+  const T  = gv('cfgT') || '感情語の地図';
+  const xL = gv('cXL')||'内向', xR = gv('cXR')||'外向';
+  const yB = gv('cYB')||'弱',   yT = gv('cYT')||'強';
+  const xN = gv('cXN')||'内外', yN = gv('cYN')||'強度';
+
+  // 背景の罫線
+  let grid = '';
+  [2,4,6,8].forEach(v => {
+    const gx=px(v), gy=py(v);
+    grid += `
+      <line x1="${gx}" y1="${PT}" x2="${gx}" y2="${PT+CH}" stroke="#e0dcd4" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="${PL}" y1="${gy}" x2="${PL+CW}" y2="${gy}" stroke="#e0dcd4" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="${gx}" y="${PT+CH+14}" font-family="Noto Sans JP,sans-serif" font-size="9" fill="#c0b8a8" text-anchor="middle">${v}</text>
+      <text x="${PL-8}" y="${gy+3.5}" font-family="Noto Sans JP,sans-serif" font-size="9" fill="#c0b8a8" text-anchor="end">${v}</text>`;
+  });
+
+  // ノード
+  let nodes = '';
+  fw.forEach(w => {
+    const cx=px(w.x), cy=py(w.y);
+    const c = cat(w.cat).color;
+    const sz = Math.max(w.s||5, 3);
+    const fw2 = w.name.length*12+24;
+    const fh = 28+Math.floor((sz-1)/3)*2;
+    const info = mkInfo(w, c);
+    nodes += `
+    <g data-info="${info}" onmouseenter="st(event,this)" onmouseleave="ht()" style="cursor:pointer;">
+      <rect x="${cx-fw2/2}" y="${cy-fh/2}" width="${fw2}" height="${fh}"
+        fill="${c}" fill-opacity="${0.05+sz*0.01}" stroke="${c}" stroke-width="${0.8+sz*0.1}"
+        rx="1"/>
+      <text x="${cx}" y="${cy+4.5}" font-family="Noto Serif JP,sans-serif" font-size="${10+Math.floor(sz/3)}" font-weight="600"
+        fill="${c}" text-anchor="middle" pointer-events="none" letter-spacing="0.03em">${escH(w.name)}</text>
+    </g>`;
+  });
+
+  // 凡例
+  let leg = '', lx = PL+4, ly = PT+12;
+  cats.filter((c,i) => fw.some(w=>w.cat===i)).forEach(c => {
+    const lw = c.name.length*9+18;
+    leg += `
+      <rect x="${lx}" y="${ly}" width="${lw}" height="16" fill="${c.color}" fill-opacity="0.12" stroke="${c.color}" stroke-width="1" rx="1"/>
+      <text x="${lx+lw/2}" y="${ly+11.5}" font-family="Noto Serif JP,sans-serif" font-size="9" font-weight="600"
+        fill="${c.color}" text-anchor="middle">${escH(c.name)}</text>`;
+    lx += lw+6;
+  });
+
+  const tw = T.length*13+40;
+  svg.innerHTML = `
+    <defs>
+      <marker id="axX" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <path d="M0,1 L5,3 L0,5z" fill="#b0a898"/>
+      </marker>
+      <marker id="axY" markerWidth="6" markerHeight="6" refX="3" refY="0" orient="auto">
+        <path d="M1,5 L3,0 L5,5z" fill="#b0a898"/>
+      </marker>
+    </defs>
+    <rect width="${W}" height="${H}" fill="#f8f5f0"/>
+    <rect x="${PL}" y="${PT}" width="${CW}" height="${CH}" fill="#ffffff" stroke="#ddd8d0" stroke-width="1"/>
+    ${grid}
+    <line x1="${PL}" y1="${PT+CH}" x2="${PL+CW+12}" y2="${PT+CH}" stroke="#b0a898" stroke-width="1.2" marker-end="url(#axX)"/>
+    <line x1="${PL}" y1="${PT+CH}" x2="${PL}" y2="${PT-12}" stroke="#b0a898" stroke-width="1.2" marker-end="url(#axY)"/>
+    <text x="${PL+4}" y="${PT+CH+26}" font-family="Noto Serif JP,sans-serif" font-size="10" fill="#9a9080">${escH(xL)}</text>
+    <text x="${PL+CW-4}" y="${PT+CH+26}" font-family="Noto Serif JP,sans-serif" font-size="10" fill="#9a9080" text-anchor="end">${escH(xR)}</text>
+    <text x="${PL-10}" y="${PT+CH-2}" font-family="Noto Serif JP,sans-serif" font-size="10" fill="#9a9080" text-anchor="end">${escH(yB)}</text>
+    <text x="${PL-10}" y="${PT+6}" font-family="Noto Serif JP,sans-serif" font-size="10" fill="#9a9080" text-anchor="end">${escH(yT)}</text>
+    <text x="${PL+CW/2}" y="${H-8}" font-family="Noto Serif JP,sans-serif" font-size="11" fill="#9a9080" text-anchor="middle" letter-spacing="0.08em">${escH(xN)}</text>
+    <text x="16" y="${PT+CH/2}" font-family="Noto Serif JP,sans-serif" font-size="11" fill="#9a9080" text-anchor="middle" writing-mode="tb" letter-spacing="0.08em">${escH(yN)}</text>
+    ${nodes}${leg}
+    <rect x="${W/2-tw/2-2}" y="9" width="${tw+4}" height="30" fill="#1a1410"/>
+    <rect x="${W/2-tw/2}" y="11" width="${tw}" height="28" fill="#1a1410"/>
+    <text x="${W/2}" y="31" font-family="Noto Serif JP,sans-serif" font-size="13" font-weight="600"
+      fill="#f0ece4" text-anchor="middle" letter-spacing="0.12em">${escH(T)}</text>`;
+}
+
+function renderNetwork(svg, W, H, fw) {
+  const T = gv('cfgT') || '感情語の地図';
+  function ec(l) {
+    if (/強度|激/.test(l)) return '#c4763a';
+    if (/内向|遮断|安/.test(l)) return '#4a6b9a';
+    if (/外向|動/.test(l)) return '#8a7a4a';
+    if (/近い|似/.test(l)) return '#4a7a6a';
+    return '#8a8078';
+  }
+  let edgeSvg = '';
+  edges.forEach(e => {
+    const pa=npos[e.a], pb=npos[e.b];
+    if (!pa||!pb) return;
+    const mx=(pa.x+pb.x)/2, my=(pa.y+pb.y)/2;
+    const color=ec(e.l);
+    edgeSvg += `
+      <line x1="${pa.x}" y1="${pa.y}" x2="${pb.x}" y2="${pb.y}"
+        stroke="${color}" stroke-width="1" stroke-opacity="0.25"/>
+      <text x="${mx}" y="${my-5}" font-family="Noto Serif JP,sans-serif" font-size="8" font-weight="400"
+        fill="${color}" fill-opacity="0.6" text-anchor="middle" letter-spacing="0.05em">${escH(e.l)}</text>`;
+  });
+  let nodes = '';
+  fw.forEach(w => {
+    const p = npos[w.name];
+    if (!p) return;
+    const c = cat(w.cat).color;
+    const sz = Math.max(w.s||5, 3);
+    const fw2 = w.name.length*12+24, fh=28;
+    const info = mkInfo(w, c);
+    nodes += `
+    <g data-info="${info}" onmouseenter="st(event,this)" onmouseleave="ht()" style="cursor:pointer;">
+      <rect x="${p.x-fw2/2}" y="${p.y-fh/2}" width="${fw2}" height="${fh}"
+        fill="${c}" fill-opacity="0.08" stroke="${c}" stroke-width="${0.8+sz*0.08}" rx="1"/>
+      <text x="${p.x}" y="${p.y+4.5}" font-family="Noto Serif JP,sans-serif" font-size="11" font-weight="600"
+        fill="${c}" text-anchor="middle" pointer-events="none" letter-spacing="0.03em">${escH(w.name)}</text>
+    </g>`;
+  });
+  let leg = '', lx=12, ly=H-28;
+  cats.filter((c,i)=>fw.some(w=>w.cat===i)).forEach(c => {
+    const lw=c.name.length*9+18;
+    leg += `
+      <rect x="${lx}" y="${ly}" width="${lw}" height="16" fill="${c.color}" fill-opacity="0.1" stroke="${c.color}" stroke-width="1" rx="1"/>
+      <text x="${lx+lw/2}" y="${ly+11.5}" font-family="Noto Serif JP,sans-serif" font-size="9" font-weight="600"
+        fill="${c.color}" text-anchor="middle">${escH(c.name)}</text>`;
+    lx+=lw+6;
+  });
+  const tw=T.length*13+40;
+  svg.innerHTML = `
+    <rect width="${W}" height="${H}" fill="#f8f5f0"/>
+    ${edgeSvg}${nodes}${leg}
+    <rect x="${W/2-tw/2-2}" y="9" width="${tw+4}" height="30" fill="#1a1410"/>
+    <text x="${W/2}" y="31" font-family="Noto Serif JP,sans-serif" font-size="13" font-weight="600"
+      fill="#f0ece4" text-anchor="middle" letter-spacing="0.12em">${escH(T)}</text>`;
+}
+
+// ── ツールチップ ──
+function mkInfo(w, c) {
+  return escAttr(JSON.stringify({
+    name:w.name, x:w.x, y:w.y, s:w.s||5,
+    dur:w.dur||'漸減', color:c,
+    cn:cats[w.cat]?.name||'',
+    memo:w.memo||'', reading:w.reading||'',
+    atmos:w.atmos||'', userTags:w.userTags||[],
+    strength:w.strength||'', density:w.density||''
+  }));
+}
+
+function st(e, el) {
+  const popup = document.getElementById('popup');
+  const d = JSON.parse(el.dataset.info);
+  const xN = gv('cXN')||'内外', yN = gv('cYN')||'強度';
+  let tagsHtml = '';
+  if (d.userTags && d.userTags.length) {
+    tagsHtml = `<div class="popup-tags">${d.userTags.map(t=>`<span class="popup-tag">#${escH(t)}</span>`).join('')}</div>`;
+  }
+  let atmosHtml = '';
+  if (d.atmos) {
+    atmosHtml = `<div class="popup-atmos">空気感：${escH(d.atmos)}</div>`;
+  }
+  let memoHtml = '';
+  if (d.memo) {
+    memoHtml = `<div class="popup-memo">${escH(d.memo)}</div>`;
+  }
+  let extraHtml = '';
+  if (d.strength || d.density) {
+    extraHtml = `<div class="popup-atmos" style="margin-top:4px;">強度：${escH(d.strength||'')}　濃さ：${escH(d.density||'')}</div>`;
+  }
+  popup.innerHTML = `
+    <div class="popup-word">${escH(d.name)}${d.reading?`<span style="font-size:11px;font-weight:300;color:#8a8070;margin-left:6px;">（${escH(d.reading)}）</span>`:''}</div>
+    <div class="popup-cat"><div class="popup-dot" style="background:${d.color};"></div>${escH(d.cn)}</div>
+    <div class="popup-bars">
+      ${bar(yN, d.y, d.color)}${bar(xN, d.x, d.color)}${bar('主体', d.s, '#8a8070')}
+    </div>
+    <div class="popup-dur">持続 <span class="popup-dur-val">${DUR[d.dur]||'?'} ${escH(d.dur)}</span></div>
+    ${extraHtml}${atmosHtml}${memoHtml}${tagsHtml}`;
+  popup.style.display = 'block';
+  const pw=popup.offsetWidth, ph=popup.offsetHeight;
+  let lx=e.clientX+14, ly=e.clientY-12;
+  if (lx+pw>window.innerWidth-6) lx=e.clientX-pw-14;
+  if (ly+ph>window.innerHeight-6) ly=window.innerHeight-ph-6;
+  if (ly<4) ly=4;
+  popup.style.left=lx+'px'; popup.style.top=ly+'px';
+  popup.classList.add('show');
+}
+function ht() { document.getElementById('popup').classList.remove('show'); }
+function bar(l, v, c) {
+  return `<div class="popup-bar-row">
+    <span class="popup-bar-label">${escH(l)}</span>
+    <div class="popup-bar-track"><div class="popup-bar-fill" style="width:${v*10}%;background:${c};"></div></div>
+    <span class="popup-bar-val">${v}</span>
+  </div>`;
+}
+
+// ── ズーム ──
+function zi() { zoom=Math.min(2.5,zoom+0.1); az(); }
+function zo() { zoom=Math.max(0.3,zoom-0.1); az(); }
+function zr() { zoom=1; az(); }
+function az() {
+  document.getElementById('ms').style.transform=`scale(${zoom})`;
+  document.getElementById('ms').style.transformOrigin='center center';
+  document.getElementById('zv').textContent=Math.round(zoom*100)+'%';
+}
+
+// ── 保存 ──
+function getSVG() { return '<svg xmlns="http://www.w3.org/2000/svg"'+document.getElementById('ms').outerHTML.slice(4); }
+function downloadSVG() {
+  const t=(gv('cfgT')||'感情地図').replace(/\s/g,'_');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([getSVG()],{type:'image/svg+xml'}));
+  a.download=t+'_'+view+'.svg'; a.click();
+  showToast('保存しました');
+}
+function copySVG() { navigator.clipboard.writeText(getSVG()).then(()=>showToast('SVGをコピーしました')); }
+function showToast(m) {
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ── ユーティリティ ──
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+// ── 初期化 ──
+renderCatRows();
+renderChips();
+calcLayout();
+render();
+window.addEventListener('resize', () => {
+  if (view==='n') { npos={}; calcLayout(); }
+  render();
+});
+</script>
+</body>
+</html>
