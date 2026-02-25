@@ -1,0 +1,3850 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>感情地図</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ── プロ図レイアウトテンプレート準拠 ──
+   比率 16:10 / 余白比1:1.6 / 色3色+グレー / 線幅3段階 / 装飾なし / Noto Sans JP */
+:root {
+  /* 配色 linear-gradient(45deg, #463f3a, #8a817c, #bcb8b1, #f4f3ee, #e0afa0) より抽出 */
+  --c-ink:    #463f3a;   /* 主色70% — 最暗・骨格 */
+  --c-accent: #e0afa0;   /* 補色25% — 強調・アクション（テラコッタ） */
+  --c-gold:   #8a817c;   /* 強調5%  — ミッドトーン */
+  /* グレースケール */
+  --c-bg:     #f4f3ee;   /* 最明・背景 */
+  --c-bg2:    #e8e6e0;
+  --c-border: #bcb8b1;
+  --c-muted:  #8a817c;
+  --c-faint:  #d8d5cf;
+  /* 線幅3段階 */
+  --lw-main: 2.4px;
+  --lw-sub:  1.2px;
+  --lw-aux:  0.6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Noto Sans JP',sans-serif;
+  background:var(--c-bg);
+  color:var(--c-ink);
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── ヘッダー（主色帯） ── */
+.hd{
+  height:40px;
+  background:var(--c-ink);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  gap:0;
+  flex-shrink:0;
+  border-bottom:2.4px solid var(--c-accent);
+}
+.logo{
+  font-size:12px;
+  font-weight:700;
+  color:#f4f3ee;
+  letter-spacing:.18em;
+  padding-right:20px;
+  border-right:var(--lw-aux) solid #2e2818;
+}
+.vtabs{display:flex;margin-left:16px;}
+.vtab{
+  font-size:9px;
+  font-weight:500;
+  letter-spacing:.12em;
+  padding:0 18px;
+  height:40px;
+  border:none;
+  border-right:1px solid rgba(255,255,255,.08);
+  background:none;
+  color:#c8bfb8;   /* 大幅に明るく */
+  cursor:pointer;
+  transition:color .12s,background .12s;
+  font-family:'Noto Sans JP',sans-serif;
+}
+.vtab:first-child{border-left:1px solid rgba(255,255,255,.08);}
+.vtab.on{background:rgba(224,175,160,.18);color:#f4e8e0;font-weight:700;}
+.vtab:hover:not(.on){color:#e8ddd8;background:rgba(255,255,255,.06);}
+.navlinks{display:flex;margin-left:8px;gap:4px;padding:0 4px;}
+.navlink{
+  font-size:9px;
+  color:#a09890;
+  text-decoration:none;
+  letter-spacing:.08em;
+  padding:0 14px;
+  height:40px;
+  display:flex;
+  align-items:center;
+  border-right:1px solid rgba(255,255,255,.08);
+  transition:color .12s;
+}
+.navlink:hover{color:#d8cec8;}
+.navlink-ext{
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.1em;
+  padding:0 14px;
+  height:26px;
+  align-self:center;
+  border:1px solid rgba(224,175,160,.45);
+  border-right:1px solid rgba(224,175,160,.45);
+  color:#e0afa0;
+  border-radius:2px;
+  transition:all .15s;
+  background:rgba(224,175,160,.08);
+}
+.navlink-ext:hover{
+  background:rgba(224,175,160,.22);
+  border-color:rgba(224,175,160,.8);
+  color:#f4e8e0;
+}
+.hd-r{margin-left:auto;display:flex;}
+.hbtn.hidden{display:none!important;}
+.hbtn{
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:9px;
+  font-weight:500;
+  letter-spacing:.1em;
+  padding:0 16px;
+  height:40px;
+  border:none;
+  border-left:1px solid rgba(255,255,255,.08);
+  background:none;
+  color:#b8aea8;   /* 明るく */
+  cursor:pointer;
+  transition:color .12s,background .12s;
+}
+.hbtn:hover{color:#f4f3ee;background:rgba(255,255,255,.1);}
+.hbtn.p{background:var(--c-accent);color:#2a1a10;font-weight:700;}
+.hbtn.p:hover{background:#ecca84;}
+
+/* ── メインレイアウト ── */
+.body{flex:1;display:flex;overflow:hidden;}
+
+/* ── 左パネル（幅=16:10に合わせて黄金比） ── */
+.lp{
+  width:220px;
+  flex-shrink:0;
+  background:var(--c-bg);
+  border-right:var(--lw-sub) solid var(--c-border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.ptabs{
+  display:flex;
+  border-bottom:var(--lw-sub) solid var(--c-border);
+  background:var(--c-bg2);
+  flex-shrink:0;
+}
+.ptab{
+  flex:1;
+  padding:8px 4px;
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:9px;
+  font-weight:500;
+  letter-spacing:.1em;
+  background:none;
+  border:none;
+  color:var(--c-muted);
+  cursor:pointer;
+  border-bottom:var(--lw-main) solid transparent;
+  margin-bottom:-1px;
+  transition:all .12s;
+}
+.ptab.on{color:var(--c-accent);border-bottom-color:var(--c-accent);}
+.ptab:hover:not(.on){color:var(--c-ink);}
+.pb{display:none;flex:1;overflow-y:auto;flex-direction:column;}
+.pb.on{display:flex;}
+.pb::-webkit-scrollbar{width:2px;}
+.pb::-webkit-scrollbar-thumb{background:var(--c-border);}
+.ps{padding:14px 16px;border-bottom:var(--lw-aux) solid var(--c-border);}
+.slbl{
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:.22em;
+  color:var(--c-muted);
+  margin-bottom:8px;
+  text-transform:uppercase;
+}
+
+/* ── ボタン類（装飾なし・機能的） ── */
+.btn-main{
+  width:100%;
+  padding:8px 12px;
+  background:var(--c-ink);
+  border:none;
+  color:#f4f3ee;
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.1em;
+  cursor:pointer;
+  transition:background .13s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.btn-main:hover{background:var(--c-accent);}
+.btn-sub{
+  width:100%;
+  margin-top:6px;
+  padding:7px;
+  background:var(--c-ink);
+  border:none;
+  color:#f4f3ee;
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:10px;
+  font-weight:500;
+  letter-spacing:.08em;
+  cursor:pointer;
+  transition:background .12s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.btn-sub:hover{background:var(--c-accent);}
+.info{font-size:9px;color:var(--c-muted);margin-top:6px;line-height:1.7;}
+.cbadge{font-size:9px;color:var(--c-accent);margin-top:5px;display:block;font-weight:600;letter-spacing:.06em;}
+
+/* ── フィルター ── */
+.fchips{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.fc{
+  font-size:9px;
+  padding:2px 8px;
+  border:var(--lw-aux) solid var(--c-border);
+  background:none;
+  color:var(--c-muted);
+  cursor:pointer;
+  font-family:'Noto Sans JP',sans-serif;
+  font-weight:500;
+  transition:all .1s;
+}
+.fc.on{background:var(--c-accent);border-color:var(--c-accent);color:#f5f2ec;}
+
+/* ── 手動入力 ── */
+.mta{
+  width:100%;
+  height:90px;
+  padding:8px 10px;
+  border:var(--lw-aux) solid var(--c-border);
+  background:var(--c-bg2);
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:10px;
+  line-height:1.8;
+  color:var(--c-ink);
+  resize:none;
+  outline:none;
+}
+.mta:focus{border-color:var(--c-accent);border-width:var(--lw-sub);}
+.mta::placeholder{color:#ccc9c2;font-size:9px;}  /* プレースホルダー：薄めに */
+.hint{
+  background:var(--c-bg2);
+  border-left:var(--lw-aux) solid var(--c-faint);
+  padding:6px 10px;
+  font-size:9px;
+  line-height:1.9;
+  color:#6a6460;  /* 説明文：濃く */
+  margin-top:6px;
+}
+.hint code{font-family:'Courier New',monospace;color:#a07060;font-size:8px;}
+
+/* ── 語チップ ── */
+.wcnt{font-size:9px;color:var(--c-muted);margin-bottom:6px;}
+.wcnt em{color:var(--c-accent);font-style:normal;font-weight:700;}
+.chips{display:flex;flex-wrap:wrap;gap:3px;}
+.chip{
+  font-size:9px;
+  padding:2px 7px;
+  border:var(--lw-aux) solid;
+  display:flex;
+  align-items:center;
+  gap:3px;
+  font-family:'Noto Sans JP',sans-serif;
+}
+.cx{background:none;border:none;color:inherit;opacity:.35;font-size:11px;cursor:pointer;padding:0;}
+.cx:hover{opacity:1;}
+
+/* ── 設定フォーム ── */
+.sf{display:flex;flex-direction:column;gap:12px;}
+.fl{font-size:8px;font-weight:700;letter-spacing:.14em;color:var(--c-muted);margin-bottom:3px;}
+.fi{
+  padding:5px 8px;
+  border:var(--lw-aux) solid var(--c-border);
+  background:var(--c-bg2);
+  color:var(--c-ink);
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:10px;
+  outline:none;
+  width:100%;
+}
+.fi:focus{border-color:var(--c-accent);border-width:var(--lw-sub);}
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+
+/* ── キャンバスエリア ── */
+.rp{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.cbar{
+  height:30px;
+  background:var(--c-bg2);
+  border-bottom:var(--lw-aux) solid var(--c-border);
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  gap:6px;
+  flex-shrink:0;
+}
+.clbl{
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.16em;
+  color:var(--c-muted);
+  font-family:'Noto Sans JP',sans-serif;
+}
+.zctrls{margin-left:auto;display:flex;align-items:center;gap:3px;}
+.zb{
+  width:22px;
+  height:22px;
+  font-size:12px;
+  background:var(--c-bg);
+  border:var(--lw-aux) solid var(--c-border);
+  color:var(--c-muted);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .1s;
+}
+.zb:hover{border-color:var(--c-accent);color:var(--c-accent);}
+.zb.w{width:auto;padding:0 8px;font-size:9px;letter-spacing:.06em;}
+.zv{font-size:9px;color:var(--c-muted);min-width:32px;text-align:center;}
+.cw{flex:1;overflow:hidden;position:relative;background:var(--c-bg);}
+#ms{width:100%;height:100%;}
+
+/* ── 空状態 ── */
+.empty{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  pointer-events:none;
+}
+.eico{font-size:24px;opacity:.15;}
+.etxt{font-size:10px;color:var(--c-muted);opacity:.6;letter-spacing:.1em;}
+
+/* ── ポップアップ（主色背景・金線） ── */
+.popup{
+  position:fixed;
+  z-index:900;
+  pointer-events:none;
+  background:#ffffff;
+  padding:14px 16px;
+  min-width:200px;
+  max-width:280px;
+  border:1px solid #d8d4ce;
+  border-top:3px solid var(--c-accent);
+  box-shadow:0 6px 24px rgba(0,0,0,.16);
+  opacity:0;
+  transition:opacity .1s;
+  border-radius:0 0 2px 2px;
+}
+.popup.show{opacity:1;pointer-events:auto;}
+.pw{font-family:'Noto Sans JP',sans-serif;font-size:18px;font-weight:700;color:#1a1614;letter-spacing:.06em;}
+.pr{font-size:10px;font-weight:400;color:#8a817c;margin-left:6px;}
+.ppcat{font-size:9px;margin:4px 0 8px;display:flex;align-items:center;gap:5px;}
+.ppdot{width:6px;height:6px;flex-shrink:0;}
+.ppcn{letter-spacing:.12em;font-weight:700;color:#3a3430;}
+.pbars{display:flex;flex-direction:column;gap:6px;}
+.prow{display:flex;align-items:center;gap:7px;}
+.plbl{font-size:10px;color:#8a817c;width:32px;flex-shrink:0;letter-spacing:.06em;}
+.ptrk{flex:1;height:4px;background:#e8e4de;border-radius:2px;}
+.pfil{height:100%;border-radius:2px;}
+.pval{font-size:11px;color:#1a1614;width:18px;text-align:right;font-weight:700;}
+.pdur{
+  margin-top:9px;
+  padding-top:8px;
+  border-top:1px solid #e8e4de;
+  font-size:11px;
+  color:#6a6460;
+  letter-spacing:.08em;
+}
+.pdurv{color:#1a1614;font-size:13px;font-weight:700;margin-left:6px;}
+.pmemo{
+  margin-top:7px;
+  padding-top:7px;
+  border-top:1px solid #e8e4de;
+  font-size:10px;
+  color:#4a4440;
+  line-height:1.7;
+  font-family:'Noto Sans JP',sans-serif;
+}
+.patmos{margin-top:5px;font-size:9px;color:#6a6460;}
+.psrc{
+  margin-top:9px;padding-top:8px;
+  border-top:1px solid #e8e4de;
+  font-size:10px;line-height:1.6;
+}
+.psrc-main{color:#c04818;font-weight:700;letter-spacing:.06em;}
+.psrc-sub{color:#6a6460;font-size:9px;}
+.psrc-reason{color:#8a8480;font-size:9px;font-style:italic;}
+.ptags{margin-top:5px;display:flex;flex-wrap:wrap;gap:3px;}
+.ptag{font-size:8px;padding:1px 5px;border:0.6px solid #c8c4be;color:#5a5450;}
+.pextra{margin-top:4px;font-size:9px;color:#8a8480;}
+.prels{margin-top:8px;padding-top:7px;border-top:1px solid #e8e4de;}
+.prelslbl{font-size:8px;color:#8a8480;letter-spacing:.14em;font-weight:700;display:block;margin-bottom:4px;}
+.prel{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.prelpart{font-size:11px;font-weight:700;color:#1a1614;letter-spacing:.04em;}
+.prellbl{font-size:9px;color:#6a5430;padding:1px 5px;border:0.6px solid #c8a870;background:#fdf8f0;}
+
+/* ── トースト ── */
+.toast{
+  position:fixed;
+  bottom:16px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--c-ink);
+  color:#f4f3ee;
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:9px;
+  font-weight:500;
+  letter-spacing:.12em;
+  padding:7px 20px;
+  border-top:1.2px solid var(--c-accent);
+  opacity:0;
+  transition:opacity .2s;
+  pointer-events:none;
+  z-index:999;
+}
+/* ── スナップショット管理モーダル ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;
+  display:flex;align-items:center;justify-content:center;
+}
+.modal-overlay.hidden{display:none;}
+.modal{
+  background:var(--c-bg);
+  border-top:var(--lw-main) solid var(--c-accent);
+  width:520px;max-height:80vh;
+  display:flex;flex-direction:column;
+  padding:20px;gap:10px;
+}
+.modal-title{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--c-ink);}
+.modal-input-row{display:flex;gap:6px;}
+.modal-input-row .fi{flex:1;}
+.snap-list{
+  flex:1;overflow-y:auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  max-height:280px;
+  min-height:60px;
+}
+.snap-list::-webkit-scrollbar{width:3px;}
+.snap-list::-webkit-scrollbar-thumb{background:var(--c-border);}
+.snap-item{
+  display:flex;flex-direction:column;gap:3px;
+  padding:7px 9px;
+  background:var(--c-bg2);
+  border:var(--lw-aux) solid var(--c-border);
+  transition:border-color .1s;
+}
+.snap-item:hover{border-color:var(--c-accent);}
+.snap-item-top{display:flex;align-items:flex-start;gap:4px;}
+.snap-name{flex:1;font-size:9px;font-weight:600;color:var(--c-ink);letter-spacing:.04em;line-height:1.4;word-break:break-all;}
+.snap-meta{font-size:7.5px;color:var(--c-muted);letter-spacing:.02em;}
+.snap-item-btns{display:flex;gap:3px;margin-top:1px;}
+.snap-btn{
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:8px;font-weight:500;letter-spacing:.06em;
+  padding:2px 8px;border:var(--lw-aux) solid;cursor:pointer;background:none;
+  transition:all .1s;flex:1;text-align:center;
+}
+.snap-btn.load{border-color:var(--c-accent);color:var(--c-accent);}
+.snap-btn.load:hover{background:var(--c-accent);color:var(--c-ink);}
+.snap-btn.del{border-color:var(--c-border);color:var(--c-muted);}
+.snap-btn.del:hover{border-color:#c04040;color:#c04040;}
+.snap-empty{font-size:9px;color:var(--c-muted);text-align:center;padding:20px;letter-spacing:.08em;grid-column:1/-1;}
+.modal-close{
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:9px;font-weight:500;letter-spacing:.1em;
+  padding:7px;border:var(--lw-aux) solid var(--c-border);
+  background:none;color:var(--c-muted);cursor:pointer;
+  transition:all .12s;
+}
+.modal-close:hover{border-color:var(--c-ink);color:var(--c-ink);}
+.toast.show{opacity:1;}
+/* ── 語リストパネル（関係一覧では固定表示、他ビューではフローティング） ── */
+#wordPanel{
+  position:absolute;
+  top:8px; right:8px;
+  width:158px;
+  max-height:calc(100% - 20px);
+  background:rgba(255,255,255,.8);
+  border:1px solid #d0ccc6;
+  border-top:2.4px solid var(--c-accent);
+  box-shadow:0 4px 18px rgba(0,0,0,.13);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  z-index:200;
+  font-family:'Noto Sans JP',sans-serif;
+  backdrop-filter:blur(4px);
+}
+#wordPanel.hidden{display:none;}
+/* 関係一覧ビューでは固定右パネルとして常時表示 */
+body.view-n #wordPanel{
+  display:flex !important;
+  position:absolute;
+  top:0; right:0; bottom:0;
+  max-height:none;
+  height:100%;
+  width:196px;
+  border-radius:0;
+  border-top:none;
+  border-right:none;
+  border-bottom:none;
+  border-left:1.2px solid var(--c-border);
+  border-top:2.4px solid var(--c-accent);
+  box-shadow:none;
+  background:var(--c-bg);
+  backdrop-filter:none;
+  top:0;
+  right:0;
+}
+body.view-n #wordPanel.hidden{display:flex !important;}
+/* 表現マップビューでも同じく固定右パネル */
+body.view-x #wordPanel{
+  display:flex !important;
+  position:absolute;
+  top:0; right:0; bottom:0;
+  max-height:none;
+  height:100%;
+  width:196px;
+  border-radius:0;
+  border-top:2.4px solid var(--c-accent);
+  border-right:none;
+  border-bottom:none;
+  border-left:1.2px solid var(--c-border);
+  box-shadow:none;
+  background:var(--c-bg);
+  backdrop-filter:none;
+}
+body.view-x #wordPanel.hidden{display:flex !important;}
+/* 散布図ビューも同じく固定右パネル */
+body.view-s #wordPanel{
+  display:flex !important;
+  position:absolute;
+  top:0; right:0; bottom:0;
+  max-height:none;
+  height:100%;
+  width:196px;
+  border-radius:0;
+  border-top:2.4px solid var(--c-accent);
+  border-right:none;
+  border-bottom:none;
+  border-left:1.2px solid var(--c-border);
+  box-shadow:none;
+  background:var(--c-bg);
+  backdrop-filter:none;
+}
+body.view-s #wordPanel.hidden{display:flex !important;}
+body.view-s #wordPanel-header{background:var(--c-bg2);cursor:pointer;}
+body.view-s #wordPanel-header:hover{background:var(--c-faint);}
+body.view-s #wordPanel-title{font-size:8px;letter-spacing:.2em;color:var(--c-muted);}
+body.view-s #wordPanel-close{color:var(--c-muted);font-size:12px;}
+body.view-x #wordPanel-header{background:var(--c-bg2);cursor:pointer;}
+body.view-x #wordPanel-header:hover{background:var(--c-faint);}
+body.view-x #wordPanel-title{font-size:8px;letter-spacing:.2em;color:var(--c-muted);}
+body.view-x #wordPanel-close{color:var(--c-muted);font-size:12px;}
+#wordPanel-header{
+  display:flex;align-items:center;
+  padding:6px 10px 5px;
+  background:rgba(247,245,242,.9);
+  border-bottom:1px solid #e0ddd8;
+  flex-shrink:0;
+  gap:6px;
+}
+body.view-n #wordPanel-header{
+  background:var(--c-bg2);
+  cursor:pointer;
+}
+body.view-n #wordPanel-header:hover{
+  background:var(--c-faint);
+}
+/* 関係一覧：語一覧ヘッダーを開閉バー的に */
+body.view-n #wordPanel-title{
+  font-size:8px;
+  letter-spacing:.2em;
+  color:var(--c-muted);
+}
+body.view-n #wordPanel-close{
+  color:var(--c-muted);
+  font-size:12px;
+}
+#wordPanel-title{
+  font-size:9px;font-weight:700;letter-spacing:.18em;
+  color:#463f3a;flex:1;
+}
+#wordPanel-close{
+  background:none;border:none;color:#bcb8b1;cursor:pointer;
+  font-size:14px;line-height:1;padding:0;
+  transition:color .1s;
+}
+#wordPanel-close:hover{color:var(--c-ink);}
+#wordPanel-body{
+  overflow-y:auto;flex:1;
+  padding:4px 0 6px;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+#wordPanel-body::-webkit-scrollbar{display:none;}
+
+/* スクロール中はポップアップを非表示 */
+.scrolling .popup,
+.scrolling .gpopup{
+  display:none !important;
+}
+.wp-section{
+  padding:5px 10px 4px;
+  font-size:8px;font-weight:700;letter-spacing:.16em;
+  color:#f4f3ee;
+  margin-top:2px;
+}
+.wp-row{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 10px;
+  cursor:pointer;
+  transition:background .08s;
+  border-bottom:0.6px solid #ece8e2;
+}
+.wp-row:last-child{border-bottom:none;}
+.wp-row:hover{background:#f0ece6;}
+.wp-row-hl{background:#e8ded6!important;}
+.wp-name{font-size:10px;font-weight:600;letter-spacing:.03em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#2a2420;}
+.wp-y{font-size:8px;color:#8a817c;flex-shrink:0;min-width:14px;text-align:right;}
+.gpopup{
+  position:fixed;
+  z-index:910;
+  background:#ffffff;
+  border:1px solid #d8d4ce;
+  border-top:3px solid var(--c-accent);
+  box-shadow:0 6px 24px rgba(0,0,0,.16);
+  min-width:200px;
+  max-width:280px;
+  padding:10px 0;
+  display:none;
+  font-family:'Noto Sans JP',sans-serif;
+  border-radius:0 0 2px 2px;
+}
+.gpopup.show{display:block;}
+.gpopup-title{font-size:8px;font-weight:700;letter-spacing:.18em;color:#8a817c;margin-bottom:7px;text-transform:uppercase;padding:0 12px;}
+.gpopup-item{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 12px 5px;
+  cursor:pointer;
+  border-top:2.5px solid #b8b4ae;
+  transition:background .1s;
+}
+.gpopup-item:first-of-type{border-top:none;padding-top:4px;}
+.gpopup-item:hover{background:#f0ede8;}
+.gpopup-item-name{font-size:13px;font-weight:700;letter-spacing:.06em;flex:1;}
+.gpopup-item-reading{font-size:9px;color:#6a6460;letter-spacing:.08em;}
+.gpopup-item-badge{font-size:9px;color:#c04818;padding:1px 5px;border:0.6px solid #c04818;}
+/* 詳細展開エリア */
+.gpopup-detail{
+  padding:0;
+}
+/* SVG内バッジ */
+.group-badge{cursor:pointer;}
+/* 固定ワードボタン */
+.fix-word-btn{
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:9px;font-weight:500;letter-spacing:.08em;
+  padding:4px 10px;border:1px solid #bcb8b1;
+  background:white;color:#5a4a40;cursor:pointer;
+  border-radius:2px;transition:all .12s;
+}
+.fix-word-btn:hover{border-color:#8a817c;background:#f8f7f4;}
+.fix-word-btn.active{
+  border-color:#e0afa0;background:#e0afa0;color:#2a1a10;font-weight:700;
+}
+/* ── 5軸ヘルプパネル ── */
+#helpPanel{
+  scrollbar-width:thin;
+  scrollbar-color:#d0ccc6 transparent;
+}
+#helpPanel::-webkit-scrollbar{width:3px;}
+#helpPanel::-webkit-scrollbar-thumb{background:#d0ccc6;border-radius:2px;}
+
+.text-modal{
+  background:var(--c-bg);
+  border-top:var(--lw-main) solid var(--c-accent);
+  width:min(860px,92vw);
+  height:min(600px,80vh);
+  display:flex;flex-direction:column;
+  padding:18px 20px 16px;gap:10px;
+}
+.text-modal textarea{
+  flex:1;
+  padding:10px 12px;
+  border:var(--lw-aux) solid var(--c-border);
+  background:var(--c-bg2);
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:11px;
+  line-height:1.9;
+  color:var(--c-ink);
+  resize:none;
+  outline:none;
+}
+.text-modal textarea:focus{border-color:var(--c-accent);border-width:var(--lw-sub);}
+.text-modal-footer{display:flex;gap:6px;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="logo">感情地図</div>
+  <div class="vtabs">
+    <button class="vtab on" id="vs" onclick="setView('s')">散布図</button>
+    <button class="vtab"    id="vm" onclick="setView('m')">ソース</button>
+    <button class="vtab"    id="vn" onclick="setView('n')">関係一覧</button>
+    <button class="vtab"    id="vx" onclick="setView('x')">表現マップ</button>
+    <button class="vtab"    id="ve" onclick="setView('e')">表現一覧</button>
+  </div>
+  <nav class="navlinks">
+    <a class="navlink navlink-ext" href="index.html">← ことば事典</a>
+    <a class="navlink navlink-ext" href="craft.html">創作ノート →</a>
+  </nav>
+  <div class="hd-r">
+    <button class="hbtn" onclick="openSnapModal()">📁 スナップショット</button>
+    <button class="hbtn" onclick="copySVG()">SVG コピー</button>
+    <button class="hbtn p" onclick="downloadSVG()">保存</button>
+  </div>
+</div>
+
+<!-- スナップショット管理モーダル -->
+<div class="modal-overlay hidden" id="snapModal" onclick="if(event.target===this)closeSnapModal()">
+  <div class="modal">
+    <div class="modal-title">📁 スナップショット管理</div>
+    
+    <!-- ファイル名構築UI -->
+    <div style="background:#f4f3ee;border:1px solid #bcb8b1;border-radius:2px;padding:8px;margin-bottom:8px;">
+      <div style="font-size:8px;color:#8a817c;margin-bottom:6px;letter-spacing:.08em;">ファイル名を構築</div>
+      
+      <!-- 接頭辞/接尾辞選択 -->
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <span style="font-size:8px;color:#5a4a40;white-space:nowrap;">位置:</span>
+        <label style="display:flex;align-items:center;gap:3px;font-size:9px;">
+          <input type="radio" name="fixPos" value="prefix" checked onchange="updateSnapPreview()"/> 接頭辞
+        </label>
+        <label style="display:flex;align-items:center;gap:3px;font-size:9px;">
+          <input type="radio" name="fixPos" value="suffix" onchange="updateSnapPreview()"/> 接尾辞
+        </label>
+      </div>
+      
+      <!-- 固定ワード選択 -->
+      <div style="margin-bottom:6px;">
+        <div style="font-size:8px;color:#8a817c;margin-bottom:3px;">固定ワード:</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="fix-word-btn" onclick="toggleFixWord(this,'[統合]')">統合</button>
+          <button class="fix-word-btn" onclick="toggleFixWord(this,'[執筆]')">執筆</button>
+          <button class="fix-word-btn" onclick="toggleFixWord(this,'[図用]')">図用</button>
+          <button class="fix-word-btn" onclick="toggleFixWord(this,'[草稿]')">草稿</button>
+          <button class="fix-word-btn" onclick="toggleFixWord(this,'[完成]')">完成</button>
+        </div>
+      </div>
+      
+      <!-- 自由入力欄 -->
+      <div style="margin-bottom:6px;">
+        <div style="font-size:8px;color:#8a817c;margin-bottom:3px;">自由入力:</div>
+        <input class="fi" id="snapCustom1" placeholder="追加テキスト1" style="font-size:9px;margin-bottom:3px;" oninput="updateSnapPreview()"/>
+        <input class="fi" id="snapCustom2" placeholder="追加テキスト2" style="font-size:9px;" oninput="updateSnapPreview()"/>
+      </div>
+      
+      <!-- プレビュー -->
+      <div style="background:white;border:1px solid #d0ccc5;border-radius:2px;padding:6px;margin-bottom:6px;">
+        <div style="font-size:8px;color:#8a817c;margin-bottom:2px;">プレビュー:</div>
+        <div id="snapPreview" style="font-size:10px;color:#463f3a;font-weight:700;word-break:break-all;"></div>
+      </div>
+      
+      <!-- ベース名入力 -->
+      <div style="display:flex;gap:6px;">
+        <input class="fi" id="snapName" placeholder="ベース名（例：喜び）" style="font-size:10px;flex:1;" oninput="updateSnapPreview()"/>
+        <button class="btn-main" style="width:auto;padding:0 14px;font-size:9px;" onclick="saveSnap()">保存</button>
+      </div>
+    </div>
+    
+    <div class="snap-list" id="snapList"></div>
+    <div style="display:flex;gap:6px;margin-top:4px;">
+      <button class="snap-btn load" style="flex:1;padding:6px 0;font-size:9px;letter-spacing:.1em;" onclick="exportSnaps()">⬇ JSONエクスポート</button>
+      <label class="snap-btn load" style="flex:1;padding:6px 0;font-size:9px;letter-spacing:.1em;text-align:center;cursor:pointer;">
+        ⬆ JSONインポート
+        <input type="file" accept=".json" style="display:none;" onchange="importSnaps(event)"/>
+      </label>
+    </div>
+    <button class="modal-close" style="margin-top:4px;" onclick="closeSnapModal()">閉じる</button>
+  </div>
+</div>
+
+<!-- テキスト拡大モーダル -->
+<div class="modal-overlay hidden" id="textModal" onclick="if(event.target===this)closeTextModal()">
+  <div class="text-modal">
+    <div class="modal-title">手動入力 — 拡大エディタ</div>
+    <textarea id="paLarge" placeholder="単語&#10;歓悦, 強度_abs:8, 強度_ctx:8, 内外:7, 主体:5, 持続:漸減, 読み:かんえつ, ソース:達成&#10;...&#10;&#10;関係&#10;歓悦-狂喜, 強度近い"></textarea>
+    <div class="text-modal-footer">
+      <button class="btn-main" style="flex:3;" onclick="loadFromModal()">読み込む</button>
+      <button class="btn-sub" style="flex:1;background:#8a817c;margin-top:0;" onclick="closeTextModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+  <div class="lp">
+    <div class="ptabs">
+      <button class="ptab on" id="ptA" onclick="setPT('A')">データ</button>
+      <button class="ptab"    id="ptB" onclick="setPT('B')">設定</button>
+    </div>
+
+    <div class="pb on" id="ppA">
+      <div class="ps">
+        <div class="slbl">事典から読み込む</div>
+        <button class="btn-main" onclick="loadFromJiten()">📚 ことば事典を読み込む</button>
+        <div class="info">localStorage から語を自動取得してプロットします</div>
+        <span class="cbadge" id="connectCount"></span>
+      </div>
+      <div class="ps" id="filterSec" style="display:none;">
+        <div class="slbl">空気感で絞り込む</div>
+        <div class="fchips" id="atmosFilter"></div>
+        <div style="margin-top:9px;">
+          <div class="slbl">グループ</div>
+          <div class="fchips" id="groupFilter"></div>
+        </div>
+      </div>
+      <div class="ps">
+        <div class="slbl" style="display:flex;align-items:center;justify-content:space-between;">
+          手動入力
+          <button onclick="openTextModal()" style="font-family:'Noto Sans JP',sans-serif;font-size:8px;font-weight:500;letter-spacing:.08em;padding:2px 8px;border:var(--lw-aux) solid var(--c-border);background:none;color:var(--c-muted);cursor:pointer;transition:all .1s;" onmouseover="this.style.borderColor='var(--c-accent)';this.style.color='var(--c-accent)';" onmouseout="this.style.borderColor='var(--c-border)';this.style.color='var(--c-muted)';">⤢ 拡大</button>
+        </div>
+        <textarea class="mta" id="pa"
+          placeholder="GPTの結果を貼り付け"></textarea>
+        <div style="display:flex;gap:5px;margin-top:0;">
+          <button class="btn-sub" style="flex:3;" onclick="loadManual()">読み込む</button>
+          <button class="btn-sub" style="flex:1;background:#8a817c;" onclick="clearAll()">クリア</button>
+        </div>
+        <div class="hint"><code># 見出し語</code> / <code># 表現</code> / <code># 表現マップ</code> / <code># 関係</code> の4ブロック形式に対応<br>
+        見出し語：<code>語, 強度_abs:N, 強度_ctx:N, 内外:N, 主体:N, 持続:漸減, 主カテゴリ:達成, 読み:ふりがな</code><br>
+        表現：<code>表現, 種別:慣用句, ニュアンス:短文, 主カテゴリ:達成, 読み:ふりがな</code><br>
+        表現マップ：<code>表現, 熱量:N, 表出:N, 身体性:N, 口語度:N, 比喩度:N, 主カテゴリ:達成</code></div>
+      </div>
+      <div class="ps" style="flex:1;">
+        <div class="wcnt">表示中 — <em id="wc">0</em> 語</div>
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+
+    <div class="pb" id="ppB">
+      <div class="ps">
+        <div class="sf">
+          <div><div class="fl">タイトル</div><input class="fi" id="cfgT" value="感情語の地図" oninput="render()"/></div>
+          <div>
+            <div class="fl">軸ラベル</div>
+            <div class="ag">
+              <div><div class="fl">X 左</div><input class="fi" id="cXL" value="内向" oninput="render()"/></div>
+              <div><div class="fl">X 右</div><input class="fi" id="cXR" value="外向" oninput="render()"/></div>
+              <div><div class="fl">Y 下</div><input class="fi" id="cYB" value="弱" oninput="render()"/></div>
+              <div><div class="fl">Y 上</div><input class="fi" id="cYT" value="強" oninput="render()"/></div>
+            </div>
+          </div>
+          <div>
+            <div class="fl">ソース分類について</div>
+            <div class="info" style="margin-top:4px;font-size:9px;line-height:1.6;color:#5a4a40;">
+              主ソース（必須）: 達成 / 関係 / 喪失・脅威 / 幸運 / 存在・意味<br>
+              幸運・存在意味・未分類 → 「その他」パネルに表示<br>
+              副ソース: ソース:達成・関係 のように・で区切ると副カテゴリにも薄く表示
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rp">
+    <div class="cbar">
+      <span class="clbl" id="cbl">散布図</span>
+      <!-- 表現マップ用軸選択（表現マップビュー時のみ表示） -->
+      <div id="axisCtrl" style="display:none;align-items:center;gap:4px;margin-left:12px;">
+        <span style="font-size:8px;font-weight:700;letter-spacing:.12em;color:var(--c-muted);">X軸</span>
+        <select id="exAxisX" onchange="render()" style="font-family:'Noto Sans JP',sans-serif;font-size:9px;padding:2px 4px;border:var(--lw-aux) solid var(--c-border);background:var(--c-bg2);color:var(--c-ink);outline:none;">
+          <option value="heat">熱量</option>
+          <option value="expr">表出</option>
+          <option value="body">身体性</option>
+          <option value="coll">口語度</option>
+          <option value="meta">比喩度</option>
+        </select>
+        <span style="font-size:8px;font-weight:700;letter-spacing:.12em;color:var(--c-muted);margin-left:6px;">Y軸</span>
+        <select id="exAxisY" onchange="render()" style="font-family:'Noto Sans JP',sans-serif;font-size:9px;padding:2px 4px;border:var(--lw-aux) solid var(--c-border);background:var(--c-bg2);color:var(--c-ink);outline:none;">
+          <option value="expr">表出</option>
+          <option value="heat">熱量</option>
+          <option value="body">身体性</option>
+          <option value="coll">口語度</option>
+          <option value="meta">比喩度</option>
+        </select>
+      </div>
+      <!-- 表現マップ・表現一覧ヘルプボタン -->
+      <button id="helpBtn" onclick="toggleHelp()" style="display:none;margin-left:10px;font-family:'Noto Sans JP',sans-serif;font-size:9px;font-weight:500;letter-spacing:.1em;padding:0 12px;height:22px;border:var(--lw-aux) solid var(--c-border);background:none;color:var(--c-muted);cursor:pointer;transition:all .12s;" onmouseover="this.style.borderColor='var(--c-accent)';this.style.color='var(--c-accent)';" onmouseout="this.style.borderColor='var(--c-border)';this.style.color='var(--c-muted)';">？ 5軸ヘルプ</button>
+      <!-- 表現一覧CSVエクスポートボタン -->
+      <button id="csvExportBtn" onclick="exportExprCSV()" style="display:none;margin-left:6px;font-family:'Noto Sans JP',sans-serif;font-size:9px;font-weight:500;letter-spacing:.1em;padding:0 12px;height:22px;border:var(--lw-aux) solid var(--c-border);background:none;color:var(--c-muted);cursor:pointer;transition:all .12s;" onmouseover="this.style.borderColor='var(--c-accent)';this.style.color='var(--c-accent)';" onmouseout="this.style.borderColor='var(--c-border)';this.style.color='var(--c-muted)';">↓ CSV</button>
+      <div class="zctrls" id="zctrls">
+        <button class="zb" onclick="zo()">−</button>
+        <span class="zv" id="zv">100%</span>
+        <button class="zb" onclick="zi()">＋</button>
+        <button class="zb w" onclick="zr()">リセット</button>
+      </div>
+    </div>
+    <div class="cw" id="cw" style="position:relative;">
+      <svg id="ms"></svg>
+      <!-- 表現一覧ビュー用HTML領域 -->
+      <div id="exprListView" style="display:none;position:absolute;inset:0;overflow-y:auto;background:var(--c-bg);padding:16px 28px 16px 20px;font-family:'Noto Sans JP',sans-serif;"></div>
+      <div class="empty" id="emptyState">
+        <div class="eico">🗺️</div>
+        <div class="etxt">事典から読み込む、または手動入力してください<br><span style="font-size:8px;opacity:.7;">4ブロック形式: # 見出し語 / # 表現 / # 表現マップ / # 関係</span></div>
+      </div>
+      <!-- 語一覧開閉ボタン（グラフ右上） -->
+      <button id="wordPanelToggleBtn" onclick="toggleWordPanel()" style="position:absolute;top:8px;right:168px;opacity:0.3;pointer-events:none;padding:6px 10px;background:#ffffff;border:1px solid #d0ccc6;border-radius:2px;font-family:'Noto Sans JP',sans-serif;font-size:9px;font-weight:600;color:#463f3a;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.1);transition:all .15s;z-index:50;">
+        <span style="margin-right:4px;">≡</span>
+        <span id="wordPanelBtnLabel">語一覧</span>
+        <span id="wordPanelBtnCount" style="margin-left:4px;font-size:8px;opacity:0.7;"></span>
+      </button>
+      <!-- フローティング語リストパネル -->
+      <div id="wordPanel" class="hidden">
+        <div id="wordPanel-header" onclick="toggleWordPanel()" style="cursor:pointer;" title="クリックで閉じる">
+          <span id="wordPanel-title">語 一 覧</span>
+          <button id="wordPanel-close" onclick="toggleWordPanel()" title="閉じる">×</button>
+        </div>
+        <div id="wordPanel-body"></div>
+      </div>
+      <!-- 5軸ヘルプパネル -->
+      <div id="helpPanel" style="display:none;position:absolute;top:8px;left:8px;width:340px;max-height:calc(100% - 20px);overflow-y:auto;background:#ffffff;border:1px solid #d0ccc6;border-top:3px solid var(--c-accent);box-shadow:0 6px 24px rgba(0,0,0,.14);z-index:300;font-family:'Noto Sans JP',sans-serif;">
+        <div style="display:flex;align-items:center;padding:10px 14px 8px;background:#f7f5f2;border-bottom:1px solid #e0ddd8;position:sticky;top:0;z-index:1;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.18em;color:#463f3a;flex:1;">表現マップ 5軸ヘルプ</span>
+          <button onclick="toggleHelp()" style="background:none;border:none;font-size:14px;color:#bcb8b1;cursor:pointer;padding:0;line-height:1;transition:color .1s;" onmouseover="this.style.color='#463f3a'" onmouseout="this.style.color='#bcb8b1'">×</button>
+        </div>
+        <div style="padding:14px 16px 18px;font-size:10px;line-height:1.85;color:#3a3430;">
+
+          <div style="background:#f4f3ee;border-left:3px solid #bcb8b1;padding:7px 10px;margin-bottom:14px;font-size:9.5px;color:#5a5450;">
+            <strong>共通：</strong>数値は回数や頻度ではなく、<strong>その表現が持つ性質の強さ</strong>です。高い/低いは良し悪しではなく配置用の座標です。
+          </div>
+
+          <div style="margin-bottom:13px;">
+            <div style="font-size:11px;font-weight:700;color:#c05020;margin-bottom:4px;letter-spacing:.04em;">熱量 <span style="font-size:9px;font-weight:400;color:#8a817c;">感情の温度・勢い</span></div>
+            <div style="color:#5a5050;font-size:9.5px;margin-bottom:3px;">低：静か、抑えめ、余韻寄り　／　高：高ぶる、圧がある、勢いが強い</div>
+            <div style="font-size:9px;color:#8a817c;font-style:italic;">※「大声で言うか」ではなく、表現自体の温度感を見ます。</div>
+          </div>
+
+          <div style="margin-bottom:13px;">
+            <div style="font-size:11px;font-weight:700;color:#2050b0;margin-bottom:4px;letter-spacing:.04em;">表出 <span style="font-size:9px;font-weight:400;color:#8a817c;">外から見える出方の強さ</span></div>
+            <div style="color:#5a5050;font-size:9.5px;margin-bottom:3px;">低：内面に留まりやすい、外から見えにくい　／　高：表情・声・動きに出やすい</div>
+            <div style="font-size:9px;color:#8a817c;font-style:italic;">※「頻繁に出るか」ではなく、外に現れやすいかです。</div>
+          </div>
+
+          <div style="margin-bottom:13px;">
+            <div style="font-size:11px;font-weight:700;color:#507830;margin-bottom:4px;letter-spacing:.04em;">身体性 <span style="font-size:9px;font-weight:400;color:#8a817c;">身体反応・部位が含まれる度合い</span></div>
+            <div style="color:#5a5050;font-size:9.5px;margin-bottom:3px;">低：身体描写がほぼない　／　高：胸・息・肩・喉・手・涙などが入る</div>
+            <div style="font-size:9px;color:#8a817c;">例：胸をなで下ろす／息が詰まる／肩の力が抜ける</div>
+          </div>
+
+          <div style="margin-bottom:13px;">
+            <div style="font-size:11px;font-weight:700;color:#8050a0;margin-bottom:4px;letter-spacing:.04em;">口語度 <span style="font-size:9px;font-weight:400;color:#8a817c;">会話文でそのまま言いやすい度合い</span></div>
+            <div style="color:#5a5050;font-size:9.5px;margin-bottom:3px;">低：書き言葉・地の文寄り、やや硬い　／　高：セリフでそのまま使いやすい</div>
+            <div style="font-size:9px;color:#8a817c;font-style:italic;">※「よく使う言葉か」ではなく、セリフとして自然かで判断します。</div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;color:#906020;margin-bottom:4px;letter-spacing:.04em;">比喩度 <span style="font-size:9px;font-weight:400;color:#8a817c;">慣用・比喩として機能する度合い</span></div>
+            <div style="color:#5a5050;font-size:9.5px;margin-bottom:3px;">低：直接的（うれしい、安心した）　／　高：慣用句・言い回し（胸をなで下ろす）</div>
+            <div style="font-size:9px;color:#8a817c;font-style:italic;">※「詩的かどうか」ではなく、言い換え・慣用表現としての強さを見ます。</div>
+          </div>
+
+          <div style="border-top:1px solid #e0ddd8;padding-top:12px;margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;color:#463f3a;margin-bottom:8px;letter-spacing:.08em;">似て見える軸の違い</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+              <div style="background:#f0f4ff;padding:7px 9px;border-radius:2px;">
+                <div style="font-size:9px;font-weight:700;color:#2050b0;margin-bottom:3px;">表出 vs 口語度</div>
+                <div style="font-size:9px;color:#4a5470;">表出：外から見えるか<br>口語度：セリフで言いやすいか</div>
+                <div style="font-size:8.5px;color:#8a817c;margin-top:4px;">「ほっとした」→ 口語高 / 表出低〜中<br>「顔がほころぶ」→ 表出高 / 口語中</div>
+              </div>
+              <div style="background:#f0f8f0;padding:7px 9px;border-radius:2px;">
+                <div style="font-size:9px;font-weight:700;color:#507830;margin-bottom:3px;">身体性 vs 比喩度</div>
+                <div style="font-size:9px;color:#4a5840;">身体性：身体情報が入るか<br>比喩度：慣用・言い換えか</div>
+                <div style="font-size:8.5px;color:#8a817c;margin-top:4px;">「肩の力が抜ける」→ 身体高 / 比喩中〜高</div>
+              </div>
+            </div>
+            <div style="background:#fff8f0;padding:7px 9px;border-radius:2px;">
+              <div style="font-size:9px;font-weight:700;color:#c05020;margin-bottom:3px;">熱量 vs 表出</div>
+              <div style="font-size:9px;color:#5a4030;">熱量：感情の温度・勢い　／　表出：外に見える出方</div>
+              <div style="font-size:8.5px;color:#8a817c;margin-top:4px;">「しみじみうれしい」→ 熱量低〜中 / 表出低　　「うれしくてたまらない」→ 熱量高 / 表出高</div>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #e0ddd8;padding-top:12px;margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;color:#463f3a;margin-bottom:7px;letter-spacing:.08em;">数値の目安</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:9px;padding:3px 10px;background:#e8e5e0;color:#463f3a;border-radius:2px;">1〜3：低い</span>
+              <span style="font-size:9px;padding:3px 10px;background:#e8e5e0;color:#463f3a;border-radius:2px;">4〜6：中間</span>
+              <span style="font-size:9px;padding:3px 10px;background:#e8e5e0;color:#463f3a;border-radius:2px;">7〜8：高い</span>
+              <span style="font-size:9px;padding:3px 10px;background:#463f3a;color:#f4f3ee;border-radius:2px;">9〜10：かなり強い</span>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid #e0ddd8;padding-top:12px;">
+            <div style="font-size:10px;font-weight:700;color:#463f3a;margin-bottom:8px;letter-spacing:.08em;">迷ったときの決め方</div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div style="display:flex;gap:8px;align-items:baseline;"><span style="font-size:9px;font-weight:700;color:#8050a0;min-width:60px;">口語度</span><span style="font-size:9.5px;color:#4a4440;">会話でそのまま言える？</span></div>
+              <div style="display:flex;gap:8px;align-items:baseline;"><span style="font-size:9px;font-weight:700;color:#2050b0;min-width:60px;">表出</span><span style="font-size:9.5px;color:#4a4440;">外から見てわかる？</span></div>
+              <div style="display:flex;gap:8px;align-items:baseline;"><span style="font-size:9px;font-weight:700;color:#507830;min-width:60px;">身体性</span><span style="font-size:9.5px;color:#4a4440;">胸・息・肩などが入る？</span></div>
+              <div style="display:flex;gap:8px;align-items:baseline;"><span style="font-size:9px;font-weight:700;color:#906020;min-width:60px;">比喩度</span><span style="font-size:9.5px;color:#4a4440;">直接言ってる？言い回し？</span></div>
+              <div style="display:flex;gap:8px;align-items:baseline;"><span style="font-size:9px;font-weight:700;color:#c05020;min-width:60px;">熱量</span><span style="font-size:9.5px;color:#4a4440;">静か？高ぶる？</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="popup" id="popup" onclick="pinPopup(event)" onmouseleave="htSafe()"></div>
+<div class="gpopup" id="gpopup" onmouseleave="htGroupHover()"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── データ ──
+let words=[], edges=[], cats=[
+  {name:'喜び',color:'#c05020'},
+  {name:'静穏',color:'#205880'},
+  {name:'深重',color:'#502878'},
+];
+// 表現ブロック（# 表現）と表現マップ（# 表現マップ）
+let expressions=[], exprMaps=[];
+const DUR={'瞬間減衰':'⚡','漸減':'〜','遮断':'◈','定常':'∞'};
+const EXMAP_KEYS={heat:'熱量',expr:'表出',body:'身体性',coll:'口語度',meta:'比喩度'};
+const EXMAP_COLORS={heat:'#c05020',expr:'#2050b0',body:'#507830',coll:'#8050a0',meta:'#906020'};
+let view='s', zoom=1, npos={};
+let activeAtmos=new Set(), activeGroups=new Set();
+
+const ATMOS_COLOR={
+  '喜':'#c05820','哀':'#1a5090','怒':'#a02020','恐':'#602090',
+  '孤':'#207058','懐':'#806010','艶':'#902058','渋':'#205040',
+  '幽':'#402870','陽':'#608010','静':'#186878','厳':'#504018',
+  '狂':'#a04818','儚':'#606880','烈':'#802028'
+};
+const STRENGTH_NUM={'弱':2,'中':5,'強':7,'極':10};
+const DENSITY_NUM ={'ライト':7,'ミドル':5,'ディープ':3};
+
+// ── 事典連携 ──
+function loadFromJiten(){
+  try{
+    const raw=localStorage.getItem('kotoba_jiten_v2');
+    if(!raw){showToast('事典データが見つかりません');return;}
+    const data=JSON.parse(raw);
+    const jw=data.words||[];
+    if(!jw.length){showToast('語彙データが空です');return;}
+    const atmosSet=[...new Set(jw.flatMap(w=>(w.atmos||'').split(',').map(s=>s.trim()).filter(Boolean)))];
+    const groups=[...new Set(jw.map(w=>w.searchGroup).filter(Boolean))];
+    if(atmosSet.length) cats=atmosSet.map(a=>({name:a,color:ATMOS_COLOR[a]||'#607060'}));
+    words=jw.map(w=>{
+      const y=STRENGTH_NUM[w.strength]||5;
+      const x=DENSITY_NUM[w.density]||5;
+      const s=w.subcategory==='コア'?8:5;
+      const fa=(w.atmos||'').split(',')[0]?.trim()||'';
+      const ci=cats.findIndex(c=>c.name===fa);
+      return{
+        name:w.word||'?',x,y,s,cat:ci>=0?ci:0,
+        dur:densityToDur(w.density),
+        reading:w.reading||'',memo:w.memo||'',note:w.note||'',
+        srcReason:w.srcReason||w.reason||'',
+        atmos:w.atmos||'',userTags:w.userTags||[],
+        group:w.searchGroup||'',
+        strength:w.strength||'',density:w.density||'',
+        y_abs:null,y_ctx:null
+      };
+    });
+    edges=[];
+    const gmap={};
+    words.forEach(w=>{if(!w.group)return;(gmap[w.group]=gmap[w.group]||[]).push(w.name);});
+    Object.entries(gmap).forEach(([g,ns])=>{
+      for(let i=0;i<ns.length-1;i++) edges.push({a:ns[i],b:ns[i+1],l:g});
+    });
+    updateFilterUI(atmosSet,groups);
+    document.getElementById('filterSec').style.display='block';
+    document.getElementById('connectCount').textContent=`✓ ${words.length} 語を読み込みました`;
+    npos={};
+    renderChips();render();
+    showToast(`${words.length} 語を読み込みました`);
+  }catch(e){showToast('エラー: '+e.message);console.error(e);}
+}
+function densityToDur(d){return d==='ライト'?'瞬間減衰':d==='ディープ'?'遮断':'漸減';}
+function updateFilterUI(al,gl){
+  document.getElementById('atmosFilter').innerHTML=
+    ['（すべて）',...al].map((a,i)=>
+      `<button class="fc ${i===0&&!activeAtmos.size?'on':''}" onclick="toggleAtmos('${a}')">${a}</button>`
+    ).join('');
+  document.getElementById('groupFilter').innerHTML=
+    gl.map(g=>`<button class="fc ${activeGroups.has(g)?'on':''}" onclick="toggleGroup('${escH(g)}')">${escH(g)}</button>`).join('');
+}
+function toggleAtmos(a){
+  if(a==='（すべて）')activeAtmos.clear();
+  else{activeAtmos.has(a)?activeAtmos.delete(a):activeAtmos.add(a);}
+  document.querySelectorAll('#atmosFilter .fc').forEach(b=>{
+    const t=b.textContent;b.classList.toggle('on',t==='（すべて）'?!activeAtmos.size:activeAtmos.has(t));
+  });
+  applyFilter();
+}
+function toggleGroup(g){
+  activeGroups.has(g)?activeGroups.delete(g):activeGroups.add(g);
+  document.querySelectorAll('#groupFilter .fc').forEach(b=>b.classList.toggle('on',activeGroups.has(b.textContent)));
+  applyFilter();
+}
+function applyFilter(){npos={};if(view==='n')calcLayout();render();}
+function filteredWords(){
+  return words.filter(w=>{
+    if(activeAtmos.size){
+      const wa=(w.atmos||'').split(',').map(s=>s.trim()).filter(Boolean);
+      if(!wa.some(a=>activeAtmos.has(a)))return false;
+    }
+    if(activeGroups.size&&!activeGroups.has(w.group))return false;
+    return true;
+  });
+}
+
+// 「喪失・脅威」「存在・意味」などカテゴリ名に・を含む複合カテゴリを保護してから分割
+const SOURCE_CATS=['喪失・脅威','存在・意味'];
+function parseSources(v){
+  let s=v;
+  const saved=[];
+  SOURCE_CATS.forEach((cat,i)=>{
+    const token=`__C${i}__`;
+    if(s.includes(cat)){s=s.split(cat).join(token);saved[i]=cat;}
+  });
+  return s.split(/[・,、]/).map(t=>{
+    const m=t.match(/^__C(\d+)__$/);
+    return m?saved[+m[1]]:t.trim();
+  }).filter(t=>t&&t!=='なし');
+}
+
+// ── 手動入力（4ブロック対応：# 見出し語 / # 表現 / # 表現マップ / # 関係） ──
+function loadManual(){
+  const raw=document.getElementById('pa').value.trim();if(!raw)return;
+
+  // ── 前処理 ──
+  let preprocessed = raw
+    .replace(/[：]/g,':')
+    .replace(/(読み:[ぁ-ん]+)\s*([^\s,，ぁ-んァ-ン][^,，]*?,)/g,'$1\n$2')
+    .replace(/\s+(関係)\s*\n?/g,'\n関係\n')
+    .replace(/([ぁ-んァ-ン一-龯a-zA-Z]+[-－][ぁ-んァ-ン一-龯a-zA-Z]+,\s*[^\s,][^,]*)\s+([ぁ-んァ-ン一-龯a-zA-Z]+[-－])/g,'$1\n$2');
+
+  const normalize=s=>s.replace(/[，、]/g,',').replace(/[：]/g,':');
+  const lines=preprocessed.split('\n').map(s=>normalize(s.trim())).filter(Boolean);
+
+  const isHead=(s,keyword)=>new RegExp(`^[#＃]\\s*${keyword}`).test(s);
+  const isWordHead=s=>/^[#＃・\.]{0,3}\s*(見出し語|単語|words?)/i.test(s);
+  const isExprHead=s=>/^[#＃]\s*表現$/.test(s);
+  const isExprMapHead=s=>/^[#＃]\s*表現マップ/.test(s);
+  const isEdgeHead=s=>/^[#＃・\.]{0,3}\s*(関係|relations?|edges?)/i.test(s);
+  const looksLikeWord=s=>/[強内主持][度外体続]/.test(s);
+  const looksLikeEdge=s=>/^[^,]+[-－][^,]+,/.test(s);
+  const looksLikeExprMap=s=>/熱量/.test(s);
+  const looksLikeExpr=s=>/種別/.test(s);
+
+  let mode='w'; // 'w'=見出し語, 'expr'=表現, 'exprMap'=表現マップ, 'e'=関係
+  const nw=[],ne=[],nEx=[],nExMap=[];
+  const SKIP=new Set(['見出し語','単語','表現マップ','表現','関係','words','relations','edges']);
+
+  for(const ln of lines){
+    if(isWordHead(ln)){mode='w';continue;}
+    if(isExprMapHead(ln)){mode='exprMap';continue;}
+    if(isExprHead(ln)){mode='expr';continue;}
+    if(isEdgeHead(ln)){mode='e';continue;}
+    if(/^[#＃]/.test(ln))continue;
+
+    // 自動モード推定
+    if(looksLikeExprMap(ln))mode='exprMap';
+    else if(looksLikeExpr(ln))mode='expr';
+    else if(looksLikeEdge(ln))mode='e';
+    else if(looksLikeWord(ln))mode='w';
+
+    const p=ln.split(',').map(s=>s.trim());
+    const name=p[0];
+    if(!name||SKIP.has(name))continue;
+
+    if(mode==='exprMap'){
+      // # 表現マップ 行のパース：熱量/表出/身体性/口語度/比喩度
+      let em={name,heat:5,expr:5,body:5,coll:5,meta:5,cat:'',reading:''};
+      for(let i=1;i<p.length;i++){
+        const m=p[i].match(/^(.+?):([\s\S]+)$/);if(!m)continue;
+        const k=m[1].trim(),v=m[2].trim();
+        const n=parseFloat(v.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)));
+        if(/熱量/.test(k))em.heat=isNaN(n)?5:Math.min(10,Math.max(1,n));
+        else if(/表出/.test(k))em.expr=isNaN(n)?5:Math.min(10,Math.max(1,n));
+        else if(/身体/.test(k))em.body=isNaN(n)?5:Math.min(10,Math.max(1,n));
+        else if(/口語/.test(k))em.coll=isNaN(n)?5:Math.min(10,Math.max(1,n));
+        else if(/比喩/.test(k))em.meta=isNaN(n)?5:Math.min(10,Math.max(1,n));
+        else if(/主カテゴリ/.test(k))em.cat=v;
+        else if(/読み/.test(k))em.reading=v;
+      }
+      nExMap.push(em);
+    } else if(mode==='expr'){
+      // # 表現 行のパース：種別/ニュアンス/主カテゴリ/読み
+      let ex={name,kind:'',nuance:'',cat:'',reading:''};
+      for(let i=1;i<p.length;i++){
+        const m=p[i].match(/^(.+?):([\s\S]+)$/);if(!m)continue;
+        const k=m[1].trim(),v=m[2].trim();
+        if(/種別/.test(k))ex.kind=v;
+        else if(/ニュアンス/.test(k))ex.nuance=v;
+        else if(/主カテゴリ/.test(k))ex.cat=v;
+        else if(/読み/.test(k))ex.reading=v;
+      }
+      nEx.push(ex);
+    } else if(mode==='w'){
+      let w={name,x:5,y:5,s:5,cat:0,dur:'漸減',reading:'',memo:'',atmos:'',userTags:[],group:'',y_abs:null,y_ctx:null,source:[],srcReason:''};
+      let mainCat='', subCat='';
+      for(let i=1;i<p.length;i++){
+        const m=p[i].match(/^(.+?):([\s\S]+)$/);if(!m)continue;
+        const k=m[1].trim(),v=m[2].trim();
+        const toN=s=>parseFloat(s.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)));
+        const n=toN(v);
+        if(/強度_abs/.test(k))w.y_abs=cl(n);
+        else if(/強度_ctx/.test(k))w.y_ctx=cl(n);
+        else if(/強度/.test(k))w.y=cl(n);
+        else if(/内外/.test(k))w.x=cl(n);
+        else if(/^主体/.test(k))w.s=cl(n);
+        else if(/持続/.test(k))w.dur=v;
+        else if(/ソース理由|src.?reason/i.test(k)){ w.srcReason=v; }
+        else if(/^ソース$|^source$|^発生源$/i.test(k))w.source=parseSources(v);
+        else if(/^主カテゴリ/.test(k)){ mainCat=v==='なし'?'':v; }
+        else if(/^副カテゴリ/.test(k)){ subCat=v==='なし'?'':v; }
+        else if(/カテゴリ理由|判定理由/.test(k)){ w.srcReason=w.srcReason||v; }
+        else if(/読み|よみ|ふりがな|フリガナ|ルビ|reading/i.test(k))w.reading=v;
+        else if(/memo|メモ/i.test(k))w.memo=v;
+        else if(/atmos|空気感/i.test(k))w.atmos=v;
+      }
+      if(!w.source.length && mainCat){
+        w.source=[mainCat];
+        if(subCat)w.source.push(subCat);
+      }
+      if(w.y_ctx!==null)w.y=w.y_ctx;
+      else if(w.y_abs!==null)w.y=w.y_abs;
+      nw.push(w);
+    } else if(mode==='e'){
+      const m=ln.match(/^(.+?)\s*[-－]\s*(.+?),\s*(.+)$/);
+      if(m){const a=m[1].trim(),b=m[2].trim(),l=m[3].trim();if(!SKIP.has(a)&&!SKIP.has(b))ne.push({a,b,l});}
+    }
+  }
+
+  if(nw.length)words=nw;
+  if(ne.length)edges=ne;
+  if(nEx.length)expressions=nEx;
+  if(nExMap.length)exprMaps=nExMap;
+
+  document.getElementById('filterSec').style.display='none';
+  npos={};if(view==='n')calcLayout();
+  renderChips();render();
+  const msg=`${words.length} 語 · ${expressions.length} 表現 · ${exprMaps.length} 表現マップ · ${edges.length} 関係`;
+  showToast(msg);
+  document.getElementById('connectCount').textContent=`✓ ${msg}`;
+}
+function cl(v){return isNaN(v)?5:Math.min(10,Math.max(1,v));}
+
+function clearAll(){
+  words=[];edges=[];expressions=[];exprMaps=[];cats=[
+    {name:'喜び',color:'#c05020'},
+    {name:'静穏',color:'#205880'},
+    {name:'深重',color:'#502878'},
+  ];
+  document.getElementById('pa').value='';
+  document.getElementById('connectCount').textContent='';
+  document.getElementById('filterSec').style.display='none';
+  activeAtmos=new Set();activeGroups=new Set();
+  npos={};netHighlight=null;
+  renderChips();render();
+  showToast('クリアしました');
+}
+
+// ── パネル ──
+function setPT(t){
+  ['A','B'].forEach(x=>{
+    document.getElementById('pt'+x).classList.toggle('on',x===t);
+    document.getElementById('pp'+x).classList.toggle('on',x===t);
+  });
+}
+function setView(v){
+  view=v;
+  if(v!=='e') _exprSortKey=null;
+  // ヘルプパネルを閉じる
+  _helpVisible=false;
+  const hp=document.getElementById('helpPanel');
+  if(hp) hp.style.display='none';
+  // ヘルプボタン表示制御（表現マップ・表現一覧のみ）
+  const hb=document.getElementById('helpBtn');
+  if(hb){
+    const show=(v==='x'||v==='e');
+    hb.style.display=show?'inline-block':'none';
+    hb.style.background='none';
+    hb.style.color='var(--c-muted)';
+    hb.style.borderColor='var(--c-border)';
+    hb.style.fontWeight='500';
+  }
+  // ズームコントロール：表現一覧では非表示
+  const zc=document.getElementById('zctrls');
+  if(zc) zc.style.display=(v==='e'?'none':'flex');
+  // CSVエクスポートボタン：表現一覧のみ
+  const csvBtn=document.getElementById('csvExportBtn');
+  if(csvBtn) csvBtn.style.display=(v==='e'?'inline-block':'none');
+  // ビュー切り替えでscatterHighlightリセット
+  if(v!=='s'&&v!=='m') scatterHighlight=null;
+  ['s','m','n','x','e'].forEach(x=>{
+    const el=document.getElementById('v'+x);
+    if(el)el.classList.toggle('on',x===v);
+  });
+  document.getElementById('cbl').textContent={s:'散布図',m:'ソース分類',n:'関係一覧',x:'表現マップ',e:'表現一覧'}[v];
+  // 関係一覧ビュークラス（語一覧パネル固定表示用）
+  document.body.classList.toggle('view-n',v==='n');
+  document.body.classList.toggle('view-x',v==='x');
+  document.body.classList.toggle('view-s',v==='s');
+
+  // 表現一覧ビューでは語一覧パネルを非表示
+  const wpToggleBtn=document.getElementById('wordPanelToggleBtn');
+  if(v==='e'){
+    const wp=document.getElementById('wordPanel');
+    if(wp) wp.classList.add('hidden');
+    if(wpToggleBtn) wpToggleBtn.style.display='none';
+  }
+
+  // 語一覧パネルの5軸ボタンエリア（表現マップのみ表示）
+  let axisBar=document.getElementById('wordPanel-axisBar');
+  if(v==='x'){
+    if(!axisBar){
+      axisBar=document.createElement('div');
+      axisBar.id='wordPanel-axisBar';
+      axisBar.style.cssText='display:flex;flex-wrap:wrap;gap:3px;padding:5px 8px 4px;border-bottom:1px solid var(--c-border);background:var(--c-bg2);flex-shrink:0;';
+      const AXES=[['cat','分類'],['heat','熱量'],['expr','表出'],['body','身体'],['coll','口語'],['meta','比喩']];
+      axisBar.innerHTML=AXES.map(([k,l])=>{
+        const active=(exprSortAxis===k);
+        return `<button id="exprAxis-${k}" onclick="setExprSortAxis('${k}')"
+          style="font-family:'Noto Sans JP',sans-serif;font-size:8px;font-weight:600;letter-spacing:.08em;padding:2px 6px;border:1px solid ${active?'var(--c-accent)':'var(--c-border)'};border-radius:2px;background:${active?'var(--c-accent)':'transparent'};color:${active?'#fff':'var(--c-muted)'};cursor:pointer;transition:all .1s;"
+          onmouseover="if(this.style.background==='transparent')this.style.background='var(--c-faint)'"
+          onmouseout="if('${k}'!==exprSortAxis)this.style.background='transparent'">${l}</button>`;
+      }).join('');
+      const panel=document.getElementById('wordPanel');
+      const body=document.getElementById('wordPanel-body');
+      panel.insertBefore(axisBar,body);
+    }
+    axisBar.style.display='flex';
+  } else if(axisBar){
+    axisBar.style.display='none';
+  }
+  // 関係一覧・表現マップ・散布図に切り替わったら語一覧パネルを常時表示
+  if(v==='n'||v==='x'||v==='s'){
+    const wp=document.getElementById('wordPanel');
+    if(wp){ wp.classList.remove('hidden'); _wordPanelVisible=true; }
+    const wpBody=document.getElementById('wordPanel-body');
+    if(wpBody) wpBody.style.display='';
+    const closeBtn=document.getElementById('wordPanel-close');
+    if(closeBtn) closeBtn.textContent='×';
+    const tb=document.getElementById('wordPanelToggleBtn');
+    if(tb) tb.style.display='none';
+  }else if(v!=='e'){
+    const tb=document.getElementById('wordPanelToggleBtn');
+    if(tb) tb.style.display='';
+  }
+  // 軸選択UI表示/非表示
+  const ac=document.getElementById('axisCtrl');
+  if(ac) ac.style.display=(v==='x'?'flex':'none');
+  if(v==='n')calcLayout();
+  // 表現一覧/SVG の切替
+  const lv=document.getElementById('exprListView');
+  const sv=document.getElementById('ms');
+  if(lv&&sv){
+    lv.style.display=(v==='e'?'block':'none');
+    sv.style.display=(v==='e'?'none':'block');
+  }
+  render();
+}
+
+// ── チップ ──
+function renderChips(){
+  const fw=filteredWords();
+  document.getElementById('wc').textContent=fw.length;
+  document.getElementById('emptyState').style.display=words.length?'none':'flex';
+  document.getElementById('chips').innerHTML=words.map((w,i)=>{
+    const c=cats[w.cat]?.color||'#607060';
+    return `<div class="chip" style="border-color:${c};color:${c};background:${c}18;">${escH(w.name)}<button class="cx" onclick="dw(${i})">×</button></div>`;
+  }).join('');
+}
+function dw(i){words.splice(i,1);renderChips();if(view==='n')calcLayout();render();}
+function gv(id){return document.getElementById(id)?.value||'';}
+function cat(i){return cats[i]||{name:'',color:'#607060'};}
+
+// ── 関係図レイアウト（コンポーネント分割） ──
+function calcLayout(){
+  const el=document.getElementById('cw');
+  const W=el.clientWidth||800,H=el.clientHeight||500;
+  const fw=filteredWords(); if(!fw.length){npos={};return;}
+  const usedNames=new Set(); edges.forEach(e=>{usedNames.add(e.a);usedNames.add(e.b);});
+  const nodes=fw.filter(w=>usedNames.has(w.name)); if(!nodes.length){npos={};return;}
+  const adj={}; nodes.forEach(w=>adj[w.name]=new Set());
+  edges.forEach(e=>{if(adj[e.a]&&adj[e.b]){adj[e.a].add(e.b);adj[e.b].add(e.a);}});
+  const comps=[],seen=new Set();
+  nodes.forEach(w=>{
+    if(seen.has(w.name))return;
+    const q=[w.name],comp=[];seen.add(w.name);
+    while(q.length){const a=q.shift();comp.push(a);[...adj[a]].forEach(b=>{if(!seen.has(b)){seen.add(b);q.push(b);}});}
+    comps.push(comp);
+  });
+  comps.sort((a,b)=>b.length-a.length);
+  const topPad=44,sidePad=28,botPad=24;
+  const inner={x:sidePad,y:topPad,w:W-sidePad*2,h:H-topPad-botPad};
+  let tiles=[];
+  if(comps.length===1){
+    tiles=[{comp:comps[0],x:inner.x,y:inner.y,w:inner.w,h:inner.h}];
+  }else{
+    const sideW=Math.max(200,Math.min(280,inner.w*0.26));
+    const mainW=inner.w-sideW-20;
+    tiles.push({comp:comps[0],x:inner.x,y:inner.y,w:mainW,h:inner.h});
+    const rest=comps.slice(1);
+    const total=rest.reduce((t,c)=>t+Math.max(2,c.length),0)||1;
+    let y=inner.y;
+    rest.forEach((c,i)=>{
+      let h=Math.floor(inner.h*(Math.max(2,c.length)/total));
+      if(i===rest.length-1)h=inner.y+inner.h-y;
+      tiles.push({comp:c,x:inner.x+mainW+20,y,w:sideW,h});
+      y+=h;
+    });
+  }
+  npos={};
+  const nodeW=n=>Math.max(48,n.length*15+20);
+  const nodeH=30;
+  function clampTile(p,name,t){
+    const hw=nodeW(name)/2,hh=nodeH/2;
+    p.x=Math.max(t.x+12+hw,Math.min(t.x+t.w-12-hw,p.x));
+    p.y=Math.max(t.y+12+hh,Math.min(t.y+t.h-12-hh,p.y));
+  }
+  tiles.forEach(tile=>{
+    const comp=tile.comp;
+    const cx=tile.x+tile.w/2,cy=tile.y+tile.h/2;
+    const R=Math.max(30,Math.min(tile.w,tile.h)*0.32);
+    comp.forEach((name,i)=>{
+      const a=-Math.PI/2+(i/Math.max(1,comp.length))*Math.PI*2;
+      npos[name]={x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)};
+      clampTile(npos[name],name,tile);
+    });
+    const compEdges=edges.filter(e=>comp.includes(e.a)&&comp.includes(e.b));
+    const ideal=Math.max(80,Math.min(tile.w,tile.h)*0.36);
+    const gravity=comp.length<=2?0.015:0.025;
+    const iters=comp.length<=2?80:220;
+    for(let it=0;it<iters;it++){
+      const disp={};comp.forEach(n=>disp[n]={x:0,y:0});
+      for(let i=0;i<comp.length;i++){
+        for(let j=i+1;j<comp.length;j++){
+          const a=comp[i],b=comp[j],pa=npos[a],pb=npos[b];
+          let dx=pa.x-pb.x,dy=pa.y-pb.y;
+          const d=Math.hypot(dx,dy)||1;
+          const minSep=(nodeW(a)+nodeW(b))/2+32;
+          if(d<minSep){const f=(minSep-d)/d*0.95;disp[a].x+=dx*f;disp[a].y+=dy*f;disp[b].x-=dx*f;disp[b].y-=dy*f;}
+        }
+      }
+      compEdges.forEach(e=>{
+        const pa=npos[e.a],pb=npos[e.b];
+        let dx=pb.x-pa.x,dy=pb.y-pa.y;
+        const d=Math.hypot(dx,dy)||1;
+        const f=(d-ideal)/d*0.12;
+        disp[e.a].x+=dx*f;disp[e.a].y+=dy*f;disp[e.b].x-=dx*f;disp[e.b].y-=dy*f;
+      });
+      comp.forEach(n=>{disp[n].x+=(cx-npos[n].x)*gravity;disp[n].y+=(cy-npos[n].y)*gravity;});
+      comp.forEach(n=>{
+        const p=npos[n],d=disp[n];
+        p.x+=Math.max(-18,Math.min(18,d.x));p.y+=Math.max(-18,Math.min(18,d.y));
+        clampTile(p,n,tile);
+      });
+    }
+  });
+}
+
+// ── メインレンダリング ──
+function render(){
+  const svg=document.getElementById('ms');
+  const el=document.getElementById('cw');
+  const W=el.clientWidth||800,H=el.clientHeight||500;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.style.transform=`scale(${zoom})`;
+  svg.style.transformOrigin='center center';
+  const fw=filteredWords();
+  if(view==='e'){renderExprList();return;}
+  if(!fw.length&&!words.length&&!expressions.length&&!exprMaps.length){svg.innerHTML='';return;}
+  if(view==='s')renderScatter(svg,W,H,fw);
+  else if(view==='m')renderMatrix(svg,W,H,fw);
+  else if(view==='x')renderExprMap(svg,W,H);
+  else renderNetwork(svg,W,H,fw);
+}
+
+// ── 散布図 ──
+function renderScatter(svg,W,H,fw){
+  const AXIS_MIN=0.5, AXIS_MAX=10.5, AXIS_RANGE=AXIS_MAX-AXIS_MIN;
+  const WORD_PANEL_W=204;
+  const PL=Math.round(W*0.02)+48, PR=Math.round(W*0.01)+WORD_PANEL_W;
+  const PT=Math.round(H*0.10)+28, PB=Math.round(H*0.10)+28;
+  const CW=W-PL-PR, CH=H-PT-PB;
+  const px=x=>PL+((x-AXIS_MIN)/AXIS_RANGE)*CW;
+  const py=y=>PT+CH-((y-AXIS_MIN)/AXIS_RANGE)*CH;
+  const xL=gv('cXL')||'内向', xR=gv('cXR')||'外向';
+  const yB=gv('cYB')||'弱', yT=gv('cYT')||'強';
+  const T=gv('cfgT')||'感情語の地図';
+
+  // グリッド
+  let grid='';
+  [1,2,3,4,5,6,7,8,9,10].forEach(v=>{
+    const isMid=(v===5||v===6);
+    grid+=`<line x1="${px(v)}" y1="${PT}" x2="${px(v)}" y2="${PT+CH}" stroke="#bcb8b1" stroke-width="${isMid?0.8:0.5}" stroke-opacity="${isMid?0.5:0.7}" stroke-dasharray="${isMid?'6,6':'2,6'}"/>
+    <line x1="${PL}" y1="${py(v)}" x2="${PL+CW}" y2="${py(v)}" stroke="#bcb8b1" stroke-width="${isMid?0.8:0.5}" stroke-opacity="${isMid?0.5:0.7}" stroke-dasharray="${isMid?'6,6':'2,6'}"/>`;
+  });
+
+  // 左側：強弱グラデーションバー
+  const BAR_W=14, BAR_X=PL-36;
+  let yBar=`<defs>
+    <linearGradient id="yGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c05020"/>
+      <stop offset="50%" stop-color="#bcb8b1"/>
+      <stop offset="100%" stop-color="#8a9ab0"/>
+    </linearGradient>
+  </defs>
+  <rect x="${BAR_X}" y="${PT}" width="${BAR_W}" height="${CH}" rx="3" fill="url(#yGrad)" fill-opacity=".55"/>
+  <rect x="${BAR_X}" y="${PT}" width="${BAR_W}" height="${CH}" rx="3" fill="none" stroke="#bcb8b1" stroke-width="0.6"/>
+  <text x="${BAR_X+BAR_W/2}" y="${PT-5}" font-family="Noto Sans JP,sans-serif" font-size="11" font-weight="700" fill="#c05020" text-anchor="middle" letter-spacing=".08em">${escH(yT)}</text>
+  <text x="${BAR_X+BAR_W/2}" y="${PT+CH+16}" font-family="Noto Sans JP,sans-serif" font-size="11" font-weight="700" fill="#8a9ab0" text-anchor="middle" letter-spacing=".08em">${escH(yB)}</text>`;
+
+
+  // ── ラベル配置（シンプル版） ──
+  // 基本：ラベルは●の真上。同一座標グループはRound-robinで上/下/右/左に振り分け。
+  // 衝突したら上→下→右→左の順で空き位置を探す。引き出し線あり。
+  const DOT_R=3;
+  const SZ=fw.length>20?9:10;  // フォントサイズ固定（シンプルに）
+  const TXTW=n=>n.length*SZ*0.65; // テキスト半幅
+  const TXTH=SZ*0.6;              // テキスト半高
+  const GAP=6;                    // ●端からテキスト端までの隙間
+
+  const dotPos=fw.map(w=>({ox:px(w.x),oy:py(w.y)}));
+
+  // 同一XY座標グループ検出（±8px）→ Round-robinで方向割り当て
+  const DIRS=['U','D','R','L','RU','LU','RD','LD']; // 優先順
+  const dirHint=new Array(fw.length).fill('U');
+  const xyG=[];
+  dotPos.forEach(({ox,oy},i)=>{
+    const g=xyG.find(g=>Math.abs(g.ox-ox)<8&&Math.abs(g.oy-oy)<8);
+    if(g)g.idx.push(i); else xyG.push({ox,oy,idx:[i]});
+  });
+  xyG.forEach(g=>{
+    if(g.idx.length<2)return;
+    g.idx.forEach((i,r)=>dirHint[i]=DIRS[r%DIRS.length]);
+  });
+
+  // 方向→ラベル中心座標
+  function dirPos(ox,oy,hw,dir){
+    const hh=TXTH;
+    switch(dir){
+      case'U': return{lx:ox,         ly:oy-DOT_R-GAP-hh};
+      case'D': return{lx:ox,         ly:oy+DOT_R+GAP+hh};
+      case'R': return{lx:ox+DOT_R+GAP+hw, ly:oy};
+      case'L': return{lx:ox-DOT_R-GAP-hw, ly:oy};
+      case'RU':return{lx:ox+DOT_R+GAP+hw, ly:oy-DOT_R-GAP-hh};
+      case'LU':return{lx:ox-DOT_R-GAP-hw, ly:oy-DOT_R-GAP-hh};
+      case'RD':return{lx:ox+DOT_R+GAP+hw, ly:oy+DOT_R+GAP+hh};
+      case'LD':return{lx:ox-DOT_R-GAP-hw, ly:oy+DOT_R+GAP+hh};
+      default: return{lx:ox,         ly:oy-DOT_R-GAP-hh};
+    }
+  }
+
+  // 配置済みリストと衝突チェック
+  const placed=[];
+  function overlaps(lx,ly,hw){
+    const hh=TXTH;
+    for(const p of placed)
+      if(Math.abs(lx-p.lx)<(hw+p.hw+4)&&Math.abs(ly-p.ly)<(hh+p.hh+2))return true;
+    return false;
+  }
+
+  // ── グループ検出（16px以内を同一グループに：散布図は広いので緩め）──
+  const scatterGroups=[]; // [{repIdx, members:[wi,...]}]
+  const scatterAssigned=new Array(fw.length).fill(-1);
+  dotPos.forEach(({ox,oy},i)=>{
+    if(scatterAssigned[i]>=0)return;
+    const g={repIdx:i,members:[i]};
+    dotPos.forEach(({ox:ox2,oy:oy2},j)=>{
+      if(j===i||scatterAssigned[j]>=0)return;
+      if(Math.abs(ox-ox2)<24&&Math.abs(oy-oy2)<24){g.members.push(j);scatterAssigned[j]=scatterGroups.length;}
+    });
+    scatterAssigned[i]=scatterGroups.length;
+    scatterGroups.push(g);
+  });
+  // グループマップ: wi → groupIndex
+  const scatterGMap=new Array(fw.length).fill(-1);
+  scatterGroups.forEach((g,gi)=>g.members.forEach(wi=>scatterGMap[wi]=gi));
+
+  let nodes='',lines='';
+  fw.forEach((w,wi)=>{
+    const gi=scatterGMap[wi];
+    const grp=scatterGroups[gi];
+    // グループの複数語はラベル非表示（代表のみバッジ付きで●を描く）
+    if(grp.members.length>1)return; // 単独語のみラベル描画
+
+    const c=cat(w.cat).color;
+    const op=(0.35+(w.s-1)*0.072).toFixed(2);
+    const {ox,oy}=dotPos[wi];
+    const hw=TXTW(w.name);
+
+    const tryDirs=[dirHint[wi],...DIRS.filter(d=>d!==dirHint[wi])];
+    let lx=ox, ly=oy-DOT_R-GAP-TXTH;
+    for(const d of tryDirs){
+      const {lx:tlx,ly:tly}=dirPos(ox,oy,hw,d);
+      const clx=Math.max(PL+hw+2,Math.min(PL+CW-hw-2,tlx));
+      const cly=Math.max(PT+TXTH+2,Math.min(PT+CH-TXTH-2,tly));
+      if(!overlaps(clx,cly,hw)){lx=clx;ly=cly;break;}
+    }
+    placed.push({lx,ly,hw,hh:TXTH});
+
+    const dist=Math.sqrt((lx-ox)**2+(ly-oy)**2);
+    if(dist>hw+DOT_R+GAP+4){
+      lines+=`<line x1="${ox}" y1="${oy}" x2="${lx}" y2="${ly}" stroke="${c}" stroke-width="0.6" stroke-opacity="0.35"/>`;
+    }
+    const info=mkInfoScatter(w,c);
+    const isHL=(scatterHighlight===w.name);
+    nodes+=`<g data-info="${info}" data-name="${escAttr(w.name)}" onmouseenter="setElementHover(this.dataset.name);st(event,this)" onmouseleave="clearElementHover();htSafe()" onclick="toggleScatterHL('${escAttr(w.name)}')" style="cursor:pointer;">
+      <rect x="${lx-hw-2}" y="${ly-TXTH-2}" width="${(hw+2)*2}" height="${(TXTH+2)*2}" fill="${isHL?c+'22':'transparent'}"/>
+      <text x="${lx}" y="${ly}" font-family="Noto Sans JP,sans-serif" font-size="${SZ}" font-weight="${isHL?'900':'700'}"
+        fill="${c}" fill-opacity="${isHL?'1':op}" text-anchor="middle" dominant-baseline="central"
+        pointer-events="none" letter-spacing=".04em"
+        text-decoration="${isHL?'underline':'none'}">${escH(w.name)}</text>
+    </g>`;
+  });
+
+  // ドット描画（単独語は通常、グループ語は代表のみバッジ付き）
+  let dots='';
+  scatterGroups.forEach(grp=>{
+    const repWi=grp.repIdx;
+    const w=fw[repWi];
+    const c=cat(w.cat).color;
+    const {ox,oy}=dotPos[repWi];
+    if(grp.members.length===1){
+      // 単独語：●はイベントなし（文字ラベルgがホバー担当）
+      const isHL=(scatterHighlight===w.name);
+      dots+=`<g data-name="${escAttr(w.name)}" pointer-events="none">
+        ${isHL?`<circle cx="${ox}" cy="${oy}" r="${DOT_R+4}" fill="none" stroke="${c}" stroke-width="1.5" stroke-opacity="0.5"/>`:'' }
+        <circle cx="${ox}" cy="${oy}" r="${DOT_R}" fill="${c}" fill-opacity=".9"/>
+      </g>`;
+    } else {
+      // グループ語：バッジ付き●（ホバー/クリックでグループポップアップ）
+      const cnt=grp.members.length;
+      const gInfos=grp.members.map(wi=>{
+        const ww=fw[wi];const cc=cat(ww.cat).color;
+        return mkInfoScatterObj(ww,cc);
+      });
+      const gData=escAttr(JSON.stringify(gInfos));
+      const BR=DOT_R+2;
+      dots+=`<g class="group-badge" data-ginfos="${gData}" onmouseenter="stGroupHover(event,this)" onmouseleave="htGroupHover()" onclick="stGroup(event,this)" style="cursor:pointer;">
+        <circle cx="${ox}" cy="${oy}" r="${BR}" fill="${c}" fill-opacity=".9" stroke="${c}" stroke-width="1.2"/>
+        <circle cx="${ox}" cy="${oy}" r="${BR+3}" fill="none" stroke="${c}" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="2,2"/>
+        <rect x="${ox+BR-1}" y="${oy-BR-7}" width="13" height="11" rx="5" fill="${c}"/>
+        <text x="${ox+BR+5.5}" y="${oy-BR-1.5}" font-family="Noto Sans JP,sans-serif" font-size="7.5" font-weight="700"
+          fill="#f4f3ee" text-anchor="middle" dominant-baseline="central" pointer-events="none">${cnt}</text>
+      </g>`;
+    }
+  });
+
+
+  const tw=T.length*10+32;
+  const axLblStyle=`font-family="Noto Sans JP,sans-serif" font-size="12" font-weight="700" letter-spacing=".1em"`;
+  svg.innerHTML=`
+    <rect width="${W}" height="${H}" fill="#f4f3ee"/>
+    ${yBar}
+    <rect x="${PL}" y="${PT}" width="${CW}" height="${CH}" fill="#ede9e3" stroke="#bcb8b1" stroke-width="0.6"/>
+    ${grid}
+    <line x1="${PL}" y1="${PT+CH}" x2="${PL+CW}" y2="${PT+CH}" stroke="#8a817c" stroke-width="2.4"/>
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+CH}" stroke="#8a817c" stroke-width="2.4"/>
+    <rect x="${PL}" y="${PT+CH+4}" width="${CW}" height="18" rx="2" fill="#463f3a" fill-opacity=".7"/>
+    <text x="${PL+8}" y="${PT+CH+16}" ${axLblStyle} fill="#e0afa0">${escH(xL)}</text>
+    <text x="${PL+CW-8}" y="${PT+CH+16}" ${axLblStyle} fill="#e0afa0" text-anchor="end">${escH(xR)}</text>
+    ${nodes}${dots}${lines}
+    <rect x="${PL}" y="${PT-30}" width="${tw}" height="22" fill="#463f3a"/>
+    <text x="${PL+tw/2}" y="${PT-13}" font-family="Noto Sans JP,sans-serif" font-size="10" font-weight="700"
+      fill="#f4f3ee" text-anchor="middle" letter-spacing=".16em">${escH(T)}</text>`;
+  // 散布図用フローティングパネル更新（グループ情報付き）
+  updateWordPanel('scatter', fw.slice().sort((a,b)=>b.y-a.y), {scatterGroups, fw});
+}
+
+// ── ソース分類ビュー（4つの小散布図） ──
+function renderMatrix(svg,W,H,fw){
+  const T=gv('cfgT')||'感情語の地図';
+  const yT=gv('cYT')||'強', yB=gv('cYB')||'弱';
+
+  // ── 4カテゴリ定義 ──
+  // source[]の主カテゴリ（source[0]）で振り分け
+  // 幸運・存在意味・未設定 → その他パネル
+  const PANELS=[
+    {
+      id:'達成',
+      label:'達成',
+      sub:'できた・得た・成し遂げた',
+      bg:'rgba(210,85,30,0.04)',
+      hdr:'rgba(210,85,30,0.16)',
+      dot:'#c05020',
+      text:'#8a2408',
+      match:s=>s==='達成',
+    },
+    {
+      id:'関係',
+      label:'関係',
+      sub:'つながり・承認・愛情・信頼',
+      bg:'rgba(40,90,190,0.04)',
+      hdr:'rgba(40,90,190,0.16)',
+      dot:'#2050b0',
+      text:'#0a2880',
+      match:s=>s==='関係',
+    },
+    {
+      id:'喪失・脅威',
+      label:'喪失・脅威',
+      sub:'失う・傷つく・脅かされる',
+      bg:'rgba(60,60,60,0.04)',
+      hdr:'rgba(60,60,60,0.20)',
+      dot:'#404040',
+      text:'#181818',
+      match:s=>s==='喪失・脅威'||s==='喪失'||s==='脅威',
+    },
+    {
+      id:'その他',
+      label:'その他',
+      sub:'幸運・存在意味・未分類',
+      bg:'rgba(80,130,80,0.04)',
+      hdr:'rgba(80,130,80,0.16)',
+      dot:'#386838',
+      text:'#143814',
+      match:s=>s==='幸運'||s==='存在・意味'||s==='存在'||s==='意味',
+      dotOf:s=>{
+        if(s==='幸運')return{dot:'#2e7a38',text:'#0e4818'};
+        if(s==='存在・意味'||s==='存在'||s==='意味')return{dot:'#6840b0',text:'#2a0870'};
+        return{dot:'#c06820',text:'#702808'};
+      }
+    },
+  ];
+
+  // 語→パネル割り当て
+  // source[0]が主カテゴリ、なければその他
+  // source[1]以降が副カテゴリ→該当パネルにも薄く表示
+  function getPrimary(w){
+    const src=w.source||[];
+    if(!src.length)return PANELS[3]; // その他
+    for(const s of src){
+      const p=PANELS.find(p=>p.match(s));
+      if(p)return p;
+    }
+    return PANELS[3];
+  }
+  function getSecondaries(w){
+    const src=w.source||[];
+    if(src.length<2)return[];
+    const primary=getPrimary(w);
+    const result=[];
+    for(let i=1;i<src.length;i++){
+      const p=PANELS.find(p=>p.match(src[i]));
+      if(p&&p!==primary&&!result.includes(p))result.push(p);
+    }
+    return result;
+  }
+
+  // ── レイアウト ──
+  const PAD=10;
+  const TITLE_H=32;
+  const GAP=8;
+  const HEADER_H=34;
+  const DOT_R=3;
+  // 2×2グリッド
+  const panelW=(W-PAD*2-GAP)/2;
+  const panelH=(H-PAD*2-TITLE_H-4-GAP)/2;
+  const panelPos=[
+    {px:PAD,              py:PAD+TITLE_H+4},
+    {px:PAD+panelW+GAP,   py:PAD+TITLE_H+4},
+    {px:PAD,              py:PAD+TITLE_H+4+panelH+GAP},
+    {px:PAD+panelW+GAP,   py:PAD+TITLE_H+4+panelH+GAP},
+  ];
+
+  // 小散布図スケール — 軸は0.5〜10.5
+  const AXIS_MIN=0.5, AXIS_MAX=10.5, AXIS_RANGE=AXIS_MAX-AXIS_MIN;
+  const XPAD_L=16, XPAD_R=16;
+  const YPAD_T=HEADER_H+32;
+  const YPAD_B=18;
+  function scaleX(ppx,s){ return ppx+XPAD_L+(panelW-XPAD_L-XPAD_R)*((s-AXIS_MIN)/AXIS_RANGE); }
+  function scaleY(ppy,y){ return ppy+YPAD_T+(panelH-YPAD_T-YPAD_B)*(1-(y-AXIS_MIN)/AXIS_RANGE); }
+
+  let out=`<rect width="${W}" height="${H}" fill="#f4f3ee"/>`;
+
+  // タイトル
+  const tw=T.length*10+32;
+  out+=`<rect x="${PAD}" y="4" width="${tw}" height="${TITLE_H-2}" fill="#463f3a"/>
+    <text x="${PAD+tw/2}" y="${4+(TITLE_H-2)/2}" font-family="Noto Sans JP,sans-serif" font-size="10" font-weight="700"
+      fill="#f4f3ee" text-anchor="middle" dominant-baseline="central" letter-spacing=".16em">${escH(T)}</text>`;
+
+  // ── 各パネル描画 ──
+  PANELS.forEach((panel,pi)=>{
+    const {px,py}=panelPos[pi];
+
+    out+=`<rect x="${px}" y="${py}" width="${panelW}" height="${panelH}"
+      fill="${panel.bg}" stroke="#bcb8b1" stroke-width="0.8" rx="2"/>`;
+    out+=`<rect x="${px}" y="${py}" width="${panelW}" height="${HEADER_H}" fill="${panel.hdr}" rx="2"/>
+      <rect x="${px}" y="${py+HEADER_H-1}" width="${panelW}" height="1" fill="${panel.dot}" fill-opacity=".3"/>
+      <text x="${px+panelW/2}" y="${py+14}" font-family="Noto Sans JP,sans-serif" font-size="13" font-weight="700"
+        fill="${panel.text}" text-anchor="middle" dominant-baseline="central" letter-spacing=".1em">${escH(panel.label)}</text>
+      <text x="${px+panelW/2}" y="${py+HEADER_H-7}" font-family="Noto Sans JP,sans-serif" font-size="8"
+        fill="${panel.text}" fill-opacity=".7" text-anchor="middle" dominant-baseline="central" letter-spacing=".04em">${escH(panel.sub)}</text>`;
+
+    // 軸ラベル（X: 自分↔他人、Y: 弱↔強）
+    const plotTop=py+YPAD_T, plotBot=py+panelH-YPAD_B;
+    const plotLeft=px+XPAD_L, plotRight=px+panelW-XPAD_R;
+    out+=`<text x="${plotLeft}"  y="${plotBot+12}" font-family="Noto Sans JP,sans-serif" font-size="8" fill="#8a817c" text-anchor="middle">自分</text>
+      <text x="${plotRight}" y="${plotBot+12}" font-family="Noto Sans JP,sans-serif" font-size="8" fill="#8a817c" text-anchor="middle">他人</text>
+      <text x="${px+8}" y="${plotTop}"   font-family="Noto Sans JP,sans-serif" font-size="7" fill="#c05020" text-anchor="middle">${escH(yT)}</text>
+      <text x="${px+8}" y="${plotBot}"   font-family="Noto Sans JP,sans-serif" font-size="7" fill="#8a9ab0" text-anchor="middle">${escH(yB)}</text>`;
+
+    // グリッド
+    [3,5,7,9].forEach(v=>{
+      const gx=scaleX(px,v), gy=scaleY(py,v);
+      out+=`<line x1="${gx}" y1="${plotTop}" x2="${gx}" y2="${plotBot}"
+        stroke="#bcb8b1" stroke-width="0.4" stroke-dasharray="2,4" stroke-opacity="0.5"/>
+      <line x1="${plotLeft}" y1="${gy}" x2="${plotRight}" y2="${gy}"
+        stroke="#bcb8b1" stroke-width="0.4" stroke-dasharray="2,4" stroke-opacity="0.5"/>`;
+    });
+    // 中央軸線
+    const midX=scaleX(px,5.5), midY=scaleY(py,5.5);
+    out+=`<line x1="${midX}" y1="${plotTop}" x2="${midX}" y2="${plotBot}"
+      stroke="#bcb8b1" stroke-width="0.8" stroke-opacity="0.6"/>
+    <line x1="${plotLeft}" y1="${midY}" x2="${plotRight}" y2="${midY}"
+      stroke="#bcb8b1" stroke-width="0.8" stroke-opacity="0.6"/>`;
+  });
+
+  // ── 語の描画（全dots統合グループ検出） ──
+  const DIRS=['U','D','R','L','RU','LU','RD','LD'];
+  const panelPlaced=PANELS.map(()=>[]);
+  const panelDotPos=PANELS.map(()=>[]);
+  const _matrixPanelWords=PANELS.map(()=>[]);
+
+  // 全語のドット位置を計算（primary/secondary両方）
+  fw.forEach(w=>{
+    const primary=getPrimary(w);
+    const pi=PANELS.indexOf(primary);
+    if(pi>=0){
+      const {px,py}=panelPos[pi];
+      panelDotPos[pi].push({ox:scaleX(px,w.s),oy:scaleY(py,w.y),w,isPrimary:true});
+    }
+    getSecondaries(w).forEach(sec=>{
+      const si=PANELS.indexOf(sec);
+      if(si>=0){
+        const {px,py}=panelPos[si];
+        panelDotPos[si].push({ox:scaleX(px,w.s),oy:scaleY(py,w.y),w,isPrimary:false});
+      }
+    });
+  });
+
+  // パネルごとに描画
+  PANELS.forEach((panel,pi)=>{
+    const {px,py}=panelPos[pi];
+    const plotTop=py+YPAD_T, plotBot=py+panelH-YPAD_B;
+    const plotLeft=px+XPAD_L;
+    const plotRight=px+panelW-XPAD_R;
+    const dots=panelDotPos[pi];
+
+    // ── 全dots統合グループ検出（8px以内を同一グループ、primary優先）──
+    const allAssigned=new Array(dots.length).fill(-1);
+    const allGroups=[]; // {repIdx, members:[di,...], hasPrimary}
+    dots.forEach(({ox,oy,isPrimary},i)=>{
+      if(allAssigned[i]>=0)return;
+      const g={repIdx:i,members:[i],hasPrimary:isPrimary};
+      dots.forEach(({ox:ox2,oy:oy2,isPrimary:ip2},j)=>{
+        if(j===i||allAssigned[j]>=0)return;
+        if(Math.abs(ox-ox2)<8&&Math.abs(oy-oy2)<8){
+          g.members.push(j);
+          allAssigned[j]=allGroups.length;
+          if(ip2)g.hasPrimary=true;
+        }
+      });
+      allAssigned[i]=allGroups.length;
+      // 代表はprimaryを優先
+      if(!isPrimary){
+        const primMember=g.members.find(mi=>dots[mi].isPrimary);
+        if(primMember!==undefined)g.repIdx=primMember;
+      }
+      allGroups.push(g);
+    });
+
+    // Round-robin方向ヒント（単独語用）
+    const dirHint=new Array(dots.length).fill('U');
+    const xyG=[];
+    dots.forEach(({ox,oy},i)=>{
+      const g=xyG.find(g=>Math.abs(g.ox-ox)<8&&Math.abs(g.oy-oy)<8);
+      if(g)g.idx.push(i); else xyG.push({ox,oy,idx:[i]});
+    });
+    xyG.forEach(g=>{
+      if(g.idx.length<2)return;
+      g.idx.forEach((i,r)=>dirHint[i]=DIRS[r%DIRS.length]);
+    });
+
+    function dirPos(ox,oy,hw,hh,dir,intensity){
+      const G=intensity>=9.5?12:3;
+      switch(dir){
+        case'U': return{lx:ox,             ly:oy-DOT_R-G-hh};
+        case'D': return{lx:ox,             ly:oy+DOT_R+G+hh};
+        case'R': return{lx:ox+DOT_R+G+hw,  ly:oy};
+        case'L': return{lx:ox-DOT_R+G+hw,  ly:oy};
+        case'RU':return{lx:ox+DOT_R+G+hw,  ly:oy-DOT_R-G-hh};
+        case'LU':return{lx:ox-DOT_R-G-hw,  ly:oy-DOT_R-G-hh};
+        case'RD':return{lx:ox+DOT_R+G+hw,  ly:oy+DOT_R+G+hh};
+        case'LD':return{lx:ox-DOT_R-G-hw,  ly:oy+DOT_R+G+hh};
+        default: return{lx:ox,             ly:oy-DOT_R-G-hh};
+      }
+    }
+
+    // 描画済みグループ追跡
+    const drawnGroups=new Set();
+
+    dots.forEach(({ox,oy,w,isPrimary},di)=>{
+      const gi=allAssigned[di];
+      const grp=allGroups[gi];
+      // 代表以外はスキップ
+      if(grp.repIdx!==di)return;
+      // 単独語（グループサイズ1）
+      if(grp.members.length===1){
+        const sz=isPrimary?10:9;
+        const hw=w.name.length*sz*0.62;
+        const hh=sz*0.6;
+        let dotColor,txtColor;
+        if(pi===3&&isPrimary&&panel.dotOf){
+          const src=w.source&&w.source[0]||'';
+          const col=panel.dotOf(src);dotColor=col.dot;txtColor=col.text;
+        }else{
+          dotColor=isPrimary?panel.dot:'#bcb8b1';
+          txtColor=isPrimary?panel.text:'#8a817c';
+        }
+        const DOT_R_=isPrimary?DOT_R:2;
+        const sOp=isPrimary?Math.min(1,0.65+(w.s-1)*0.04).toFixed(2):'0.80'; // サブソースも明確に
+        let forceDir=null;if(w.y>=9.5)forceDir='U';
+        const baseDir=forceDir||dirHint[di];
+        const tryDirs=[baseDir,...DIRS.filter(d=>d!==baseDir)];
+        let lx=ox,ly=oy-DOT_R_-5-hh;
+        for(const d of tryDirs){
+          const {lx:tlx,ly:tly}=dirPos(ox,oy,hw,hh,d,w.y);
+          const clx=Math.max(plotLeft+hw+1,Math.min(plotRight-hw-1,tlx));
+          const topLimit=w.y>=9.5?plotTop:plotTop+hh+1;
+          const cly=Math.max(topLimit,Math.min(plotBot-hh-1,tly));
+          const ok=!panelPlaced[pi].some(p=>Math.abs(clx-p.lx)<(hw+p.hw+3)&&Math.abs(cly-p.ly)<(hh+p.hh+2));
+          if(ok){lx=clx;ly=cly;break;}
+        }
+        panelPlaced[pi].push({lx,ly,hw,hh});
+        const info=mkInfo(w,dotColor);
+        const dist=Math.sqrt((lx-ox)**2+(ly-oy)**2);
+        if(dist>hw+DOT_R_+6){
+          out+=`<line x1="${ox}" y1="${oy}" x2="${lx}" y2="${ly}" stroke="${dotColor}" stroke-width="${isPrimary?'0.8':'0.5'}" stroke-opacity="${isPrimary?'0.4':'0.3'}" pointer-events="none"/>`;
+        }
+        out+=`<circle cx="${ox}" cy="${oy}" r="${DOT_R_}" fill="${dotColor}" fill-opacity="${sOp}" pointer-events="none"/>`;
+        // サブソースは斜体＋少し小さめで区別
+        const txtWeight=isPrimary?'700':'600';
+        const fontStyle=isPrimary?'normal':'italic';
+        const isHL_=(scatterHighlight===w.name);
+        out+=`<g data-info="${info}" data-name="${escAttr(w.name)}" onmouseenter="setElementHover(this.dataset.name);st(event,this)" onmouseleave="clearElementHover();htSafe()" onclick="toggleScatterHL('${escAttr(w.name)}')" style="cursor:pointer;">
+          ${isHL_?`<circle cx="${ox}" cy="${oy}" r="${DOT_R_+4}" fill="none" stroke="${dotColor}" stroke-width="1.5" stroke-opacity="0.5" pointer-events="none"/>`:''}
+          <rect x="${lx-hw-2}" y="${ly-hh-2}" width="${(hw+2)*2}" height="${(hh+2)*2}" fill="${isHL_?dotColor+'18':'transparent'}"/>
+          <text x="${lx}" y="${ly}" font-family="Noto Sans JP,sans-serif" font-size="${sz}" font-weight="${isHL_?'900':txtWeight}" font-style="${fontStyle}"
+            fill="${txtColor}" fill-opacity="${isHL_?'1':sOp}" text-anchor="middle" dominant-baseline="central"
+            pointer-events="none" letter-spacing=".04em"
+            text-decoration="${isHL_?'underline':'none'}">${escH(w.name)}</text>
+        </g>`;
+      } else {
+        // グループ（2語以上）：代表色はprimaryの色、なければpanel.dot
+        if(drawnGroups.has(gi))return;
+        drawnGroups.add(gi);
+        const repW=w;
+        let dotColor=panel.dot;
+        const primMember=grp.members.find(mi=>dots[mi].isPrimary);
+        if(primMember!==undefined){
+          const pw2=dots[primMember].w;
+          if(pi===3&&panel.dotOf){
+            const src=pw2.source&&pw2.source[0]||'';
+            dotColor=panel.dotOf(src).dot;
+          }else{dotColor=panel.dot;}
+        }
+        const cnt=grp.members.length;
+        // gInfos：グループ内全語のmkInfo（primary優先でソート）
+        const sortedMembers=[...grp.members].sort((a,b)=>(dots[b].isPrimary?1:0)-(dots[a].isPrimary?1:0));
+        const gInfos=sortedMembers.map(mi=>{
+          const dItem=dots[mi];
+          let dc=dItem.isPrimary?panel.dot:'#bcb8b1';
+          if(pi===3&&panel.dotOf&&dItem.isPrimary){
+            const s=dItem.w.source&&dItem.w.source[0]||'';
+            dc=panel.dotOf(s).dot;
+          }
+          return mkInfoObj(dItem.w,dc); // 生オブジェクト→配列をまとめて1回escAttr
+        });
+        const gData=escAttr(JSON.stringify(gInfos));
+        const BR=DOT_R+2;
+        const sOp=Math.min(1,0.5+(repW.s-1)*0.06).toFixed(2);
+        // サブソースのみの場合は灰色系に
+        const badgeColor=grp.hasPrimary?dotColor:'#bcb8b1';
+        const badgeFill=grp.hasPrimary?'#f4f3ee':'#d8d5cf';
+        out+=`<g class="group-badge" data-ginfos="${gData}" onmouseenter="stGroupHover(event,this)" onmouseleave="htGroupHover()" onclick="stGroup(event,this)" style="cursor:pointer;">
+          <circle cx="${ox}" cy="${oy}" r="${BR}" fill="${badgeColor}" fill-opacity="${sOp}" stroke="${badgeColor}" stroke-width="1.2"/>
+          <circle cx="${ox}" cy="${oy}" r="${BR+3}" fill="none" stroke="${badgeColor}" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="2,2"/>
+          <rect x="${ox+BR-1}" y="${oy-BR-7}" width="13" height="11" rx="5" fill="${badgeColor}"/>
+          <text x="${ox+BR+5.5}" y="${oy-BR-1.5}" font-family="Noto Sans JP,sans-serif" font-size="7.5" font-weight="700"
+            fill="${badgeFill}" text-anchor="middle" dominant-baseline="central" pointer-events="none">${cnt}</text>
+        </g>`;
+      }
+    });
+
+    // フローティングパネル用にパネルの語リストを収集（primary/secondary両方含む）
+    _matrixPanelWords[pi]=dots.map(d=>({w:d.w,panel,isPrimary:d.isPrimary}));
+  });
+
+  // フローティングパネルを更新
+  updateWordPanel('source', _matrixPanelWords);
+
+  svg.innerHTML=out;
+}
+
+// ── 関係一覧（上部タグ＋クリックハイライト対応） ──
+let netHighlight=null; // ハイライト中の単語名
+let netHighlightLabel=null; // ハイライト中の分類ラベル
+let netGroupsByLabel={}; // 関係一覧の分類→エッジマップ（グローバル参照用）
+let scatterHighlight=null; // 散布図・ソースのクリック固定ハイライト
+let exprHighlight=null;   // 表現マップのクリックハイライト
+let exprSortAxis='cat';   // 語一覧の表示軸: cat/heat/expr/body/coll/meta
+
+function toggleNetHighlight(name){
+  netHighlight=(netHighlight===name)?null:name;
+  netHighlightLabel=null;
+  render();
+}
+
+function toggleExprHighlight(name){
+  exprHighlight=(exprHighlight===name)?null:name;
+  // 語一覧の該当行をハイライト＆スクロール
+  const body=document.getElementById('wordPanel-body');
+  if(!body)return;
+  body.querySelectorAll('.wp-row').forEach(row=>{
+    const hl=row.dataset.hlname===exprHighlight;
+    row.classList.toggle('wp-row-hl',hl);
+    if(hl) row.scrollIntoView({block:'nearest',behavior:'smooth'});
+  });
+}
+
+function setExprSortAxis(axis){
+  exprSortAxis=axis;
+  // ボタンのアクティブ状態更新
+  ['cat','heat','expr','body','coll','meta'].forEach(k=>{
+    const btn=document.getElementById('exprAxis-'+k);
+    if(btn){
+      const active=(exprSortAxis===k);
+      btn.style.background=active?'var(--c-accent)':'transparent';
+      btn.style.color=active?'#fff':'var(--c-muted)';
+      btn.style.borderColor=active?'var(--c-accent)':'var(--c-border)';
+    }
+  });
+  // 語一覧を再描画
+  const sorted=exprSortAxis==='cat'
+    ? exprMaps.slice().sort((a,b)=>b.heat-a.heat)
+    : exprMaps.slice().sort((a,b)=>(b[exprSortAxis]||0)-(a[exprSortAxis]||0));
+  updateWordPanel('expr', sorted);
+}
+
+function toggleNetLabelHighlight(label){
+  netHighlightLabel=(netHighlightLabel===label)?null:label;
+  netHighlight=null;
+  render();
+}
+
+function renderNetwork(svg,W,H,fw){
+  const T=gv('cfgT')||'感情語の地図';
+  if(!edges.length){
+    svg.innerHTML=`<rect width="${W}" height="${H}" fill="#f4f3ee"/>
+      <text x="${W/2}" y="${H/2}" font-family="Noto Sans JP,sans-serif" font-size="13" fill="#bcb8b1" text-anchor="middle">関係データがありません</text>`;
+    return;
+  }
+
+  const LABEL_ORDER=['強度近い','内向き系','外向き系','質が似ている','対照的','中間域','遮断型','瞬発型'];
+
+  // ラベル別 → anchor:targets[] にまとめる
+  const groupsByLabel={};
+  edges.forEach(e=>{
+    const l=e.l||'その他';
+    if(!groupsByLabel[l])groupsByLabel[l]=[];
+    groupsByLabel[l].push({a:e.a,b:e.b});
+  });
+
+  function mergeEdges(edgeList){
+    const map=new Map();
+    edgeList.forEach(({a,b})=>{
+      if(!map.has(a))map.set(a,new Set());
+      map.get(a).add(b);
+    });
+    const result=[];
+    map.forEach((targets,anchor)=>result.push({anchor,targets:[...targets]}));
+    return result;
+  }
+
+  const sortedLabels=[
+    ...LABEL_ORDER.filter(l=>groupsByLabel[l]),
+    ...Object.keys(groupsByLabel).filter(l=>!LABEL_ORDER.includes(l))
+  ];
+  const groups={};
+  sortedLabels.forEach(l=>{ groups[l]=mergeEdges(groupsByLabel[l]); });
+  // グローバルに保存（updateWordPanelから参照するため）
+  netGroupsByLabel=groupsByLabel;
+
+  function lColor(l){
+    if(/強度|激/.test(l))return'#b0583a';
+    if(/内向/.test(l))return'#3a6888';
+    if(/外向/.test(l))return'#907230';
+    if(/似|近/.test(l))return'#4a7a5a';
+    if(/対照/.test(l))return'#8a5050';
+    if(/中間/.test(l))return'#606060';
+    if(/遮断/.test(l))return'#505090';
+    if(/瞬発/.test(l))return'#8a6030';
+    return'#6a6662';
+  }
+
+  const PAD=Math.round(W*0.025);
+  const TOP=36; // タイトル帯の高さ
+  const CONTENT_TOP=TOP+6;
+
+  // ── レイアウト定数 ──
+  // 語一覧パネルは常時表示（右端196px）なので右端マージンを確保
+  const WORD_PANEL_W=204; // 語一覧パネル幅 + 余白
+  // 左パネル幅（選択語詳細）
+  const LEFT_W=Math.round(W*0.22);
+  const LEFT_X=PAD;
+  // 右エリア（全ラベルカード）：語一覧パネルの左端まで
+  const RIGHT_X=LEFT_X+LEFT_W+10;
+  const RIGHT_W=W-RIGHT_X-PAD-WORD_PANEL_W;
+  const ROW_H=28;  // 行高を統一（24→28）
+  const GROUP_PAD_TOP=6, GROUP_PAD_BOT=6, GROUP_GAP=7, HEADER_H=18;
+
+  function groupH(items){
+    return HEADER_H+GROUP_PAD_TOP+GROUP_PAD_BOT+items.length*ROW_H;
+  }
+
+  // カラム数を右エリア幅から決定
+  const COLS=sortedLabels.length>6?3:sortedLabels.length>2?2:1;
+  const rColW=(RIGHT_W-((COLS-1)*10))/COLS;
+
+  const colItems=[];
+  for(let i=0;i<COLS;i++)colItems.push([]);
+  const colHeights=new Array(COLS).fill(0);
+  sortedLabels.forEach(l=>{
+    const h=groupH(groups[l]);
+    const minCol=colHeights.indexOf(Math.min(...colHeights));
+    colItems[minCol].push({label:l,items:groups[l],h,rawCount:groupsByLabel[l].length});
+    colHeights[minCol]+=h+GROUP_GAP;
+  });
+
+  // ── 全単語タグ（上部タグバー → 左パネル上部に変更）は廃止
+  // 全単語リストをパネル内に表示
+  const allWords=[...new Set(edges.flatMap(e=>[e.a,e.b]))].sort();
+
+  // ── 左パネル描画 ──
+  const TAG_FONT=10, TAG_PAD_X=7, TAG_PAD_Y=3, TAG_H=TAG_FONT+TAG_PAD_Y*2, TAG_GAP=4;
+  let leftPanel='';
+
+  // 左パネル背景
+  leftPanel+=`<rect x="${LEFT_X}" y="${CONTENT_TOP}" width="${LEFT_W}" height="${H-CONTENT_TOP-PAD}" fill="#ede9e3" stroke="#bcb8b1" stroke-width="0.6" rx="2"/>`;
+
+  // 左パネルヘッダー（語を選択）
+  leftPanel+=`<rect x="${LEFT_X}" y="${CONTENT_TOP}" width="${LEFT_W}" height="20" fill="#bcb8b1" fill-opacity=".4" rx="2"/>
+    <text x="${LEFT_X+LEFT_W/2}" y="${CONTENT_TOP+13}" font-family="Noto Sans JP,sans-serif" font-size="9" font-weight="700" fill="#463f3a" text-anchor="middle" letter-spacing=".1em">語を選択</text>`;
+
+  // 単語タグリスト（左パネル内）
+  let wTagX=LEFT_X+6, wTagY=CONTENT_TOP+26;
+  allWords.forEach(name=>{
+    const charW=TAG_FONT*0.9;
+    const tw2=Math.ceil(name.length*charW)+TAG_PAD_X*2;
+    if(wTagX+tw2>LEFT_X+LEFT_W-6){wTagX=LEFT_X+6;wTagY+=TAG_H+TAG_GAP;}
+    // ラベルハイライト時：そのラベルに含まれる語を強調
+    const inLabelHL=netHighlightLabel&&(groupsByLabel[netHighlightLabel]||[]).some(e=>e.a===name||e.b===name);
+    const isHL=netHighlight===name||inLabelHL;
+    const bgColor=isHL?'#e0afa0':'#f4f3ee';
+    const txtColor=isHL?'#2a1a10':'#463f3a';
+    const borderColor=isHL?'#c07060':'#8a817c';
+    const borderW=isHL?1.5:0.8;
+    const wObj=words.find(w=>w.name===name);
+    const wColor=wObj?(cats[wObj.cat]?.color||'#607060'):'#8a817c';
+    // wordsにない語でもエッジ情報だけで最小ポップアップを出す
+    const relEdgesForTag=edges.filter(e=>e.a===name||e.b===name).map(e=>({
+      partner:e.a===name?e.b:e.a, label:e.l
+    }));
+    const tagInfo=wObj
+      ? escAttr(mkInfoScatter(wObj,wColor))
+      : escAttr(JSON.stringify({name,color:wColor,mode:'scatter',x:5,y:5,s:5,dur:'—',rels:relEdgesForTag,source:[],reading:'',memo:'',atmos:'',userTags:[],cn:'',y_abs:null,y_ctx:null,srcReason:''}));
+    leftPanel+=`<g onclick="toggleNetHighlight('${escAttr(name)}')" style="cursor:pointer;"
+      data-info="${tagInfo}" onmouseenter="stDelayed(event,this)" onmouseleave="htDelayed()">
+      <rect x="${wTagX}" y="${wTagY}" width="${tw2}" height="${TAG_H}" rx="2"
+        fill="${bgColor}" stroke="${borderColor}" stroke-width="${borderW}"/>
+      <text x="${wTagX+TAG_PAD_X}" y="${wTagY+TAG_H-TAG_PAD_Y-1}" font-family="Noto Sans JP,sans-serif" font-size="${TAG_FONT}"
+        fill="${txtColor}" font-weight="${isHL?'700':'500'}" pointer-events="none">${escH(name)}</text>
+    </g>`;
+    wTagX+=tw2+TAG_GAP;
+  });
+  const tagListBottom=wTagY+TAG_H+8;
+
+  // ── 分類フィルターセクション ──
+  const LABEL_SEC_TOP=tagListBottom+4;
+  const LABEL_SEC_LABEL_H=16;
+  leftPanel+=`<line x1="${LEFT_X+4}" y1="${LABEL_SEC_TOP}" x2="${LEFT_X+LEFT_W-4}" y2="${LABEL_SEC_TOP}" stroke="#bcb8b1" stroke-width="0.5"/>`;
+  leftPanel+=`<text x="${LEFT_X+7}" y="${LABEL_SEC_TOP+11}" font-family="Noto Sans JP,sans-serif" font-size="8" font-weight="700" fill="#6a6460" letter-spacing=".14em">分類で絞り込む</text>`;
+
+  // 縦リスト形式（重なり防止）
+  const LBL_ROW_H=20, LBL_ROW_GAP=2;
+  let lblRowY=LABEL_SEC_TOP+LABEL_SEC_LABEL_H+2;
+  sortedLabels.forEach(lbl=>{
+    const col=lColor(lbl);
+    const isLblHL=netHighlightLabel===lbl;
+    const bgFill=isLblHL?col:'none';
+    const txtFill=isLblHL?'#ffffff':col;
+    leftPanel+=`<g onclick="toggleNetLabelHighlight('${escAttr(lbl)}')" style="cursor:pointer;">
+      <rect x="${LEFT_X+4}" y="${lblRowY}" width="${LEFT_W-8}" height="${LBL_ROW_H}" rx="2"
+        fill="${bgFill}" fill-opacity="${isLblHL?1:.1}" stroke="${col}" stroke-width="${isLblHL?1.4:.8}"/>
+      <text x="${LEFT_X+10}" y="${lblRowY+LBL_ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="9" font-weight="${isLblHL?'700':'600'}"
+        fill="${txtFill}" dominant-baseline="central" letter-spacing=".06em">${escH(lbl)}</text>
+      <text x="${LEFT_X+LEFT_W-8}" y="${lblRowY+LBL_ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="8"
+        fill="${txtFill}" fill-opacity="${isLblHL?1:.7}" text-anchor="end" dominant-baseline="central">${(groupsByLabel[lbl]||[]).length}件</text>
+      <rect x="${LEFT_X+4}" y="${lblRowY}" width="${LEFT_W-8}" height="${LBL_ROW_H}" rx="2" fill="transparent"/>
+    </g>`;
+    lblRowY+=LBL_ROW_H+LBL_ROW_GAP;
+  });
+  const labelSecBottom=lblRowY+4;
+
+  // ── 左パネル：選択語の詳細（関係一覧）──
+  if(netHighlight){
+    // 区切り線
+    leftPanel+=`<line x1="${LEFT_X+6}" y1="${labelSecBottom}" x2="${LEFT_X+LEFT_W-6}" y2="${labelSecBottom}" stroke="#bcb8b1" stroke-width="0.6"/>`;
+
+    // 選択語名ヘッダー帯（目立つように）
+    const hBandH=26;
+    leftPanel+=`<rect x="${LEFT_X+4}" y="${labelSecBottom+5}" width="${LEFT_W-8}" height="${hBandH}" fill="#463f3a" rx="2"/>
+      <text x="${LEFT_X+LEFT_W/2}" y="${labelSecBottom+5+hBandH/2}" font-family="Noto Sans JP,sans-serif" font-size="14" font-weight="700"
+        fill="#f4f3ee" text-anchor="middle" dominant-baseline="central" letter-spacing=".06em">${escH(netHighlight)}</text>`;
+
+    // 該当エッジをラベル別にまとめて表示
+    const relEdges=edges.filter(e=>e.a===netHighlight||e.b===netHighlight);
+    const relByLabel={};
+    relEdges.forEach(e=>{
+      const l=e.l||'その他';
+      const partner=e.a===netHighlight?e.b:e.a;
+      (relByLabel[l]=relByLabel[l]||[]).push(partner);
+    });
+    let ry=labelSecBottom+38;
+    Object.entries(relByLabel).forEach(([lbl,partners])=>{
+      const col=lColor(lbl);
+      leftPanel+=`<rect x="${LEFT_X+6}" y="${ry}" width="${LEFT_W-12}" height="${HEADER_H}" fill="${col}" fill-opacity=".18" rx="1"/>
+        <text x="${LEFT_X+10}" y="${ry+12}" font-family="Noto Sans JP,sans-serif" font-size="8" font-weight="700"
+          fill="${col}" letter-spacing=".1em">${escH(lbl)}</text>`;
+      ry+=HEADER_H+2;
+      partners.forEach(p=>{
+        leftPanel+=`<text x="${LEFT_X+LEFT_W/2}" y="${ry+ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="11" font-weight="700"
+          fill="#463f3a" text-anchor="middle" dominant-baseline="central" letter-spacing=".04em">${escH(p)}</text>`;
+        ry+=ROW_H;
+      });
+      ry+=4;
+    });
+    if(!relEdges.length){
+      // 関係なしの場合は何も表示しない
+    }
+  }else if(netHighlightLabel){
+    // ラベル選択時：そのラベルの語ペア一覧を詳細表示
+    leftPanel+=`<line x1="${LEFT_X+6}" y1="${labelSecBottom}" x2="${LEFT_X+LEFT_W-6}" y2="${labelSecBottom}" stroke="#bcb8b1" stroke-width="0.6"/>`;
+    const col=lColor(netHighlightLabel);
+    const hBandH=22;
+    leftPanel+=`<rect x="${LEFT_X+4}" y="${labelSecBottom+5}" width="${LEFT_W-8}" height="${hBandH}" fill="${col}" rx="2"/>
+      <text x="${LEFT_X+LEFT_W/2}" y="${labelSecBottom+5+hBandH/2}" font-family="Noto Sans JP,sans-serif" font-size="9" font-weight="700"
+        fill="#f4f3ee" text-anchor="middle" dominant-baseline="central" letter-spacing=".1em">${escH(netHighlightLabel)}</text>`;
+    const lEdges=groupsByLabel[netHighlightLabel]||[];
+    let ry=labelSecBottom+34;
+    lEdges.forEach(({a,b},ii)=>{
+      if(ii%2===0) leftPanel+=`<rect x="${LEFT_X+4}" y="${ry-1}" width="${LEFT_W-8}" height="${ROW_H}" fill="${col}" fill-opacity=".06"/>`;
+      // a → b
+      const MX=LEFT_X+LEFT_W/2;
+      leftPanel+=`<text x="${MX-8}" y="${ry+ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="10" font-weight="700"
+        fill="#2a2420" text-anchor="end" dominant-baseline="central">${escH(a)}</text>`;
+      leftPanel+=`<text x="${MX}" y="${ry+ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="8"
+        fill="${col}" text-anchor="middle" dominant-baseline="central">↔</text>`;
+      leftPanel+=`<text x="${MX+8}" y="${ry+ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="10" font-weight="700"
+        fill="#2a2420" text-anchor="start" dominant-baseline="central">${escH(b)}</text>`;
+      ry+=ROW_H;
+    });
+  }else{
+    leftPanel+=`<text x="${LEFT_X+LEFT_W/2}" y="${labelSecBottom+20}" font-family="Noto Sans JP,sans-serif" font-size="9"
+      fill="#bcb8b1" text-anchor="middle" letter-spacing=".06em">↑ 語または分類を</text>
+    <text x="${LEFT_X+LEFT_W/2}" y="${labelSecBottom+36}" font-family="Noto Sans JP,sans-serif" font-size="9"
+      fill="#bcb8b1" text-anchor="middle" letter-spacing=".06em">クリックで表示</text>`;
+  }
+
+  // ── 右エリア：全ラベルカード ──
+  let cards='';
+  for(let ci=0;ci<COLS;ci++){
+    const bx=RIGHT_X+ci*(rColW+10);
+    let by=CONTENT_TOP;
+    colItems[ci].forEach(({label,items,h,rawCount})=>{
+      const col=lColor(label);
+      const isLabelHL=netHighlightLabel===label;
+      cards+=`<rect x="${bx}" y="${by}" width="${rColW}" height="${h}" fill="${isLabelHL?col:'#f4f3ee'}" fill-opacity="${isLabelHL?.07:1}" stroke="${isLabelHL?col:'#bcb8b1'}" stroke-width="${isLabelHL?1.4:.6}" rx="1"/>`;
+      cards+=`<rect x="${bx}" y="${by}" width="${rColW}" height="${HEADER_H}" fill="${col}" fill-opacity="${isLabelHL?.45:.18}" rx="1"/>
+        <line x1="${bx}" y1="${by+HEADER_H}" x2="${bx+rColW}" y2="${by+HEADER_H}" stroke="${col}" stroke-width="${isLabelHL?1.2:.8}"/>
+        <text x="${bx+7}" y="${by+HEADER_H/2}" font-family="Noto Sans JP,sans-serif" font-size="9" font-weight="700"
+          fill="${col}" letter-spacing=".1em" dominant-baseline="central">${escH(label)}</text>
+        <text x="${bx+rColW-6}" y="${by+HEADER_H/2}" font-family="Noto Sans JP,sans-serif" font-size="8"
+          fill="${col}" fill-opacity=".7" text-anchor="end" dominant-baseline="central">${rawCount}件</text>`;
+      let ry=by+HEADER_H+GROUP_PAD_TOP;
+      items.forEach(({anchor,targets},ii)=>{
+        const isAnchorHL=netHighlight===anchor;
+        const isTargetHL=targets.some(t=>netHighlight===t);
+        // ラベル選択時はそのカードの全行を薄くハイライト、語選択はそのままの強調
+        const anyHL=isAnchorHL||isTargetHL||isLabelHL;
+        const rowH=ROW_H;
+        if(ii%2===0)cards+=`<rect x="${bx+1}" y="${ry}" width="${rColW-2}" height="${rowH}" fill="${col}" fill-opacity=".04"/>`;
+        if(isAnchorHL||isTargetHL){
+          cards+=`<rect x="${bx+1}" y="${ry}" width="${rColW-2}" height="${rowH}" fill="white" fill-opacity=".9"/>
+            <rect x="${bx+1}" y="${ry}" width="${rColW-2}" height="${rowH}" fill="${col}" fill-opacity=".12" stroke="${col}" stroke-width="1.4"/>`;
+        }
+        const ink='#5a4a40';
+        const ARROW_X=bx+rColW*0.50;  // 矢印を中央に配置（0.46→0.50）
+        // anchor: 右端(矢印左)に右揃え、targets: 矢印右に左揃え、フォントサイズ統一
+        cards+=`<text x="${ARROW_X-8}" y="${ry+ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="11" font-weight="${isAnchorHL?'900':'700'}"
+          fill="${isAnchorHL?col:ink}" text-anchor="end" letter-spacing=".04em" dominant-baseline="central">${escH(anchor)}</text>`;
+        cards+=`<text x="${ARROW_X}" y="${ry+ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="9"
+          fill="${col}" text-anchor="middle" dominant-baseline="central">→</text>`;
+        cards+=`<text x="${ARROW_X+8}" y="${ry+ROW_H/2}" font-family="Noto Sans JP,sans-serif" font-size="11" font-weight="${isTargetHL?'900':'700'}"
+          fill="${isTargetHL?col:ink}" text-anchor="start" letter-spacing=".04em" dominant-baseline="central">${escH(targets.join('・'))}</text>`;
+        if(ii<items.length-1)cards+=`<line x1="${bx+5}" y1="${ry+rowH}" x2="${bx+rColW-5}" y2="${ry+rowH}" stroke="#bcb8b1" stroke-width="0.3"/>`;
+        ry+=rowH;
+      });
+      by+=h+GROUP_GAP;
+    });
+  }
+
+  // タイトル
+  const tw=T.length*10+32;
+  svg.innerHTML=`
+    <rect width="${W}" height="${H}" fill="#f4f3ee"/>
+    <rect x="${PAD}" y="6" width="${tw}" height="20" fill="#463f3a"/>
+    <text x="${PAD+tw/2}" y="20" font-family="Noto Sans JP,sans-serif" font-size="10" font-weight="700"
+      fill="#f4f3ee" text-anchor="middle" letter-spacing=".16em">${escH(T)}</text>
+    ${leftPanel}${cards}`;
+  // 関係一覧：語一覧パネルをネットワークモードで表示
+  // fw（filteredWords）をそのまま渡す。wordsにsrcReasonが入っている
+  updateWordPanel('net', fw.slice(), {scatterGroups:[], fw});
+}
+
+// ── 表現マップ（# 表現マップ 散布図） ──
+function renderExprMap(svg,W,H){
+  const data=exprMaps;
+  const T=gv('cfgT')||'感情語の地図';
+  if(!data.length){
+    svg.innerHTML=`<rect width="${W}" height="${H}" fill="#f4f3ee"/>
+      <text x="${W/2}" y="${H/2}" font-family="Noto Sans JP,sans-serif" font-size="13" fill="#bcb8b1" text-anchor="middle">表現マップデータがありません（# 表現マップ ブロックを入力してください）</text>`;
+    return;
+  }
+  const xKey=document.getElementById('exAxisX')?.value||'heat';
+  const yKey=document.getElementById('exAxisY')?.value||'expr';
+  const xLabel=EXMAP_KEYS[xKey]||xKey;
+  const yLabel=EXMAP_KEYS[yKey]||yKey;
+
+  const AXIS_MIN=0.5,AXIS_MAX=10.5,AXIS_RANGE=AXIS_MAX-AXIS_MIN;
+  const WORD_PANEL_W=204;
+  const PL=Math.round(W*0.02)+48,PR=Math.round(W*0.01)+WORD_PANEL_W;
+  const PT=Math.round(H*0.12)+28,PB=Math.round(H*0.10)+28;
+  const CW=W-PL-PR,CH=H-PT-PB;
+  const px=v=>PL+((v-AXIS_MIN)/AXIS_RANGE)*CW;
+  const py=v=>PT+CH-((v-AXIS_MIN)/AXIS_RANGE)*CH;
+
+  // カテゴリ色マップ
+  const CAT_COLORS={'達成':'#c05020','関係':'#2050b0','喪失・脅威':'#404040','幸運':'#2e7a38','存在・意味':'#6840b0','その他':'#8a817c'};
+  function catColor(cat){return CAT_COLORS[cat]||'#e0afa0';}
+
+  // グリッド
+  let grid='';
+  [1,2,3,4,5,6,7,8,9,10].forEach(v=>{
+    const isMid=(v===5||v===6);
+    grid+=`<line x1="${px(v)}" y1="${PT}" x2="${px(v)}" y2="${PT+CH}" stroke="#bcb8b1" stroke-width="${isMid?.8:.5}" stroke-opacity="${isMid?.5:.7}" stroke-dasharray="${isMid?'6,6':'2,6'}"/>
+    <line x1="${PL}" y1="${py(v)}" x2="${PL+CW}" y2="${py(v)}" stroke="#bcb8b1" stroke-width="${isMid?.8:.5}" stroke-opacity="${isMid?.5:.7}" stroke-dasharray="${isMid?'6,6':'2,6'}"/>`;
+  });
+
+  // 目盛り数値
+  let ticks='';
+  [1,3,5,7,9].forEach(v=>{
+    ticks+=`<text x="${px(v)}" y="${PT+CH+14}" font-family="Noto Sans JP,sans-serif" font-size="9" font-weight="700" fill="#f0ebe4" text-anchor="middle">${v}</text>`;
+    ticks+=`<text x="${PL-6}" y="${py(v)}" font-family="Noto Sans JP,sans-serif" font-size="9" font-weight="700" fill="#a09890" text-anchor="end" dominant-baseline="central">${v}</text>`;
+  });
+
+  const DOT_R=4;
+  const SZ=data.length>15?9:10;
+  const TXTW=n=>n.length*SZ*0.62;
+  const TXTH=SZ*0.6;
+  const GAP=5;
+  const DIRS=['U','D','R','L','RU','LU','RD','LD'];
+
+  const dotPos=data.map(em=>({ox:px(em[xKey]),oy:py(em[yKey])}));
+  const placed=[];
+  function overlaps(lx,ly,hw){
+    const hh=TXTH;
+    for(const p of placed)
+      if(Math.abs(lx-p.lx)<(hw+p.hw+4)&&Math.abs(ly-p.ly)<(hh+p.hh+2))return true;
+    return false;
+  }
+  function dirPos(ox,oy,hw,dir){
+    const hh=TXTH;
+    switch(dir){
+      case'U': return{lx:ox,         ly:oy-DOT_R-GAP-hh};
+      case'D': return{lx:ox,         ly:oy+DOT_R+GAP+hh};
+      case'R': return{lx:ox+DOT_R+GAP+hw, ly:oy};
+      case'L': return{lx:ox-DOT_R-GAP-hw, ly:oy};
+      case'RU':return{lx:ox+DOT_R+GAP+hw, ly:oy-DOT_R-GAP-hh};
+      case'LU':return{lx:ox-DOT_R-GAP-hw, ly:oy-DOT_R-GAP-hh};
+      case'RD':return{lx:ox+DOT_R+GAP+hw, ly:oy+DOT_R+GAP+hh};
+      case'LD':return{lx:ox-DOT_R-GAP-hw, ly:oy+DOT_R+GAP+hh};
+      default: return{lx:ox,         ly:oy-DOT_R-GAP-hh};
+    }
+  }
+
+  // Round-robin方向ヒント
+  const dirHint=new Array(data.length).fill('U');
+  const xyG=[];
+  dotPos.forEach(({ox,oy},i)=>{
+    const g=xyG.find(g=>Math.abs(g.ox-ox)<10&&Math.abs(g.oy-oy)<10);
+    if(g)g.idx.push(i); else xyG.push({ox,oy,idx:[i]});
+  });
+  xyG.forEach(g=>{if(g.idx.length<2)return;g.idx.forEach((i,r)=>dirHint[i]=DIRS[r%DIRS.length]);});
+
+  let nodes='',dots='',lines='';
+  data.forEach((em,i)=>{
+    const {ox,oy}=dotPos[i];
+    const c=catColor(em.cat);
+    const hw=TXTW(em.name);
+
+    // ラベル配置
+    const tryDirs=[dirHint[i],...DIRS.filter(d=>d!==dirHint[i])];
+    let lx=ox,ly=oy-DOT_R-GAP-TXTH;
+    for(const d of tryDirs){
+      const {lx:tlx,ly:tly}=dirPos(ox,oy,hw,d);
+      const clx=Math.max(PL+hw+2,Math.min(PL+CW-hw-2,tlx));
+      const cly=Math.max(PT+TXTH+2,Math.min(PT+CH-TXTH-2,tly));
+      if(!overlaps(clx,cly,hw)){lx=clx;ly=cly;break;}
+    }
+    placed.push({lx,ly,hw,hh:TXTH});
+
+    const dist=Math.hypot(lx-ox,ly-oy);
+    if(dist>hw+DOT_R+GAP+4){
+      lines+=`<line x1="${ox}" y1="${oy}" x2="${lx}" y2="${ly}" stroke="${c}" stroke-width="0.6" stroke-opacity="0.4"/>`;
+    }
+    // ツールチップ用データ
+    const tip=escAttr(JSON.stringify({name:em.name,reading:em.reading,cat:em.cat,
+      heat:em.heat,expr:em.expr,body:em.body,coll:em.coll,meta:em.meta,color:c,mode:'exprMap'}));
+    dots+=`<circle cx="${ox}" cy="${oy}" r="${DOT_R}" fill="${c}" fill-opacity=".85" pointer-events="none"/>`;
+    nodes+=`<g data-info="${tip}" onclick="toggleExprHighlight('${escAttr(em.name)}')" onmouseenter="setElementHover(JSON.parse(this.dataset.info).name);stExprDelayed(event,this)" onmouseleave="clearElementHover();htDelayed()" style="cursor:pointer;">
+      <rect x="${lx-hw-2}" y="${ly-TXTH-2}" width="${(hw+2)*2}" height="${(TXTH+2)*2}" fill="transparent"/>
+      <text x="${lx}" y="${ly}" font-family="Noto Sans JP,sans-serif" font-size="${SZ}" font-weight="${exprHighlight===em.name?'900':'700'}"
+        fill="${exprHighlight===em.name?em.name?c:c:c}" text-anchor="middle" dominant-baseline="central" pointer-events="none" letter-spacing=".04em"
+        opacity="${exprHighlight&&exprHighlight!==em.name?0.35:1}">${escH(em.name)}</text>
+    </g>`;
+  });
+
+  // 凡例（カテゴリ色）
+  const usedCats=[...new Set(data.map(em=>em.cat).filter(Boolean))];
+  let legend='';
+  usedCats.forEach((cat,i)=>{
+    const lx=PL+i*110;
+    const ly=PT+CH+46;
+    if(lx+100>W)return;
+    legend+=`<circle cx="${lx}" cy="${ly}" r="4" fill="${catColor(cat)}"/>
+      <text x="${lx+8}" y="${ly}" font-family="Noto Sans JP,sans-serif" font-size="9" fill="#463f3a" dominant-baseline="central">${escH(cat)}</text>`;
+  });
+
+  // 5軸バーチャート（右下）
+  const BAR_X=PL+CW+8,BAR_Y=PT;
+  const BAR_W=PR-10>40?PR-10:12;
+
+  // タイトル：幅をCWに収める
+  const titleFull=`${T} — 表現マップ`;
+  const tw=Math.min(CW, titleFull.length*9+24);
+  const axLblStyle=`font-family="Noto Sans JP,sans-serif" font-size="11" font-weight="700" letter-spacing=".1em"`;
+  svg.innerHTML=`
+    <rect width="${W}" height="${H}" fill="#f4f3ee"/>
+    <rect x="${PL}" y="${PT}" width="${CW}" height="${CH}" fill="#ede9e3" stroke="#bcb8b1" stroke-width="0.6"/>
+    ${grid}
+    <line x1="${PL}" y1="${PT+CH}" x2="${PL+CW}" y2="${PT+CH}" stroke="#463f3a" stroke-width="2.4"/>
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+CH}" stroke="#463f3a" stroke-width="2.4"/>
+    <!-- X軸ラベル -->
+    <rect x="${PL}" y="${PT+CH+4}" width="${CW}" height="18" rx="2" fill="#463f3a" fill-opacity=".85"/>
+    <text x="${PL+CW/2}" y="${PT+CH+16}" ${axLblStyle} fill="#f4e8e0" text-anchor="middle">← ${escH(xLabel)} →</text>
+    <!-- 目盛り数値（バーの後に描画） -->
+    ${ticks}
+    <!-- Y軸ラベル -->
+    <text transform="rotate(-90,${PL-28},${PT+CH/2})" x="${PL-28}" y="${PT+CH/2}" ${axLblStyle} fill="#463f3a" text-anchor="middle">↑ ${escH(yLabel)}</text>
+    ${lines}${nodes}${dots}
+    ${legend}
+    <rect x="${PL}" y="${PT-30}" width="${tw}" height="22" fill="#463f3a"/>
+    <text x="${PL+tw/2}" y="${PT-13}" font-family="Noto Sans JP,sans-serif" font-size="10" font-weight="700"
+      fill="#f4f3ee" text-anchor="middle" letter-spacing=".14em">${escH(titleFull)}</text>`;
+  // 表現マップ用パネル更新（exprMaps を熱量降順で）
+  updateWordPanel('expr', exprMaps.slice().sort((a,b)=>b.heat-a.heat));
+}
+
+// ── 表現一覧（HTML テーブル） ──
+let _exprSortKey = null; // null=デフォルト(カテゴリ順), 'heat'/'expr'/'body'/'coll'/'meta'
+
+function setExprSort(key){
+  _exprSortKey = (_exprSortKey === key) ? null : key;
+  // ボタンハイライト更新
+  ['heat','expr','body','coll','meta'].forEach(k=>{
+    const btn=document.getElementById('esort-'+k);
+    if(btn){
+      btn.style.background = (_exprSortKey===k)?EXMAP_COLORS[k]:'#e8e5e0';
+      btn.style.color = (_exprSortKey===k)?'#f4f3ee':'#463f3a';
+    }
+  });
+  renderExprList();
+}
+
+function renderExprList(){
+  const el=document.getElementById('exprListView');
+  if(!el)return;
+  if(!expressions.length&&!exprMaps.length){
+    el.innerHTML=`<div style="text-align:center;padding:60px 0;font-size:11px;color:#bcb8b1;letter-spacing:.1em;">表現データがありません<br>（# 表現 ブロックを入力してください）</div>`;
+    return;
+  }
+  const CAT_COLORS={'達成':'#c05020','関係':'#2050b0','喪失・脅威':'#404040','幸運':'#2e7a38','存在・意味':'#6840b0','その他':'#8a817c'};
+  function catColor(cat){return CAT_COLORS[cat]||'#e0afa0';}
+  // exprMaps を name → 数値 の辞書に
+  const mapByName={};
+  exprMaps.forEach(em=>mapByName[em.name]=em);
+
+  const hasMap=exprMaps.length>0;
+
+  // ── ソートコントロールUI ──
+  const sortBtns=hasMap?['heat','expr','body','coll','meta'].map(k=>{
+    const label=EXMAP_KEYS[k];
+    const col=EXMAP_COLORS[k];
+    const isActive=_exprSortKey===k;
+    return `<button id="esort-${k}" onclick="setExprSort('${k}')"
+      style="font-family:'Noto Sans JP',sans-serif;font-size:8px;font-weight:${isActive?'700':'500'};letter-spacing:.1em;
+      padding:3px 9px;border:none;border-radius:2px;cursor:pointer;transition:all .12s;
+      background:${isActive?col:'#e8e5e0'};color:${isActive?'#f4f3ee':'#463f3a'};"
+      title="${label}で並べ替え">${label}</button>`;
+  }).join(''):'';
+
+  let html=`<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <span style="font-size:8px;font-weight:700;letter-spacing:.2em;color:#8a817c;">表現一覧</span>
+    <span style="font-size:9px;color:#8a817c;">${expressions.length}件${hasMap?' · マップデータ付き':''}</span>
+    ${hasMap?`<span style="font-size:8px;color:#bcb8b1;margin-left:4px;">並替:</span>${sortBtns}`:''}
+    ${_exprSortKey?`<button onclick="setExprSort(null)" style="font-family:'Noto Sans JP',sans-serif;font-size:8px;font-weight:500;letter-spacing:.08em;padding:3px 9px;border:var(--lw-aux) solid var(--c-border);background:none;color:var(--c-muted);cursor:pointer;transition:all .12s;" onmouseover="this.style.borderColor='var(--c-ink)';this.style.color='var(--c-ink)';" onmouseout="this.style.borderColor='var(--c-border)';this.style.color='var(--c-muted)';">× リセット</button>`:''}
+  </div>`;
+
+  function axBar(val,color){
+    return `<div style="display:flex;align-items:center;gap:4px;">
+      <div style="width:52px;height:4px;background:#e8e5e0;border-radius:2px;flex-shrink:0;">
+        <div style="width:${val*10}%;height:100%;background:${color};border-radius:2px;"></div>
+      </div>
+      <span style="font-size:9px;font-weight:700;color:#463f3a;">${val}</span>
+    </div>`;
+  }
+
+  // ── ソートキーあり → カテゴリ横断・降順で全表示 ──
+  if(_exprSortKey && hasMap){
+    const sortedAll=[...expressions].sort((a,b)=>{
+      const ea=mapByName[a.name],eb=mapByName[b.name];
+      const va=ea?ea[_exprSortKey]:0;
+      const vb=eb?eb[_exprSortKey]:0;
+      return vb-va;
+    });
+    const sLabel=EXMAP_KEYS[_exprSortKey];
+    const sColor=EXMAP_COLORS[_exprSortKey];
+    html+=`<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;border-bottom:2px solid ${sColor};padding-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:${sColor};letter-spacing:.08em;">${sLabel}順</span>
+        <span style="font-size:9px;color:#8a817c;">${sortedAll.length}件</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-family:'Noto Sans JP',sans-serif;">
+        <thead>
+          <tr style="background:#d8d4ce;font-size:8px;letter-spacing:.12em;color:#2a2420;font-weight:700;">
+            <th style="padding:5px 8px;text-align:left;border:1px solid #c8c4be;">表現 / 読み</th>
+            <th style="padding:5px 8px;text-align:left;border:1px solid #c8c4be;">カテゴリ</th>
+            <th style="padding:5px 8px;text-align:left;border:1px solid #c8c4be;min-width:120px;">ニュアンス</th>
+            <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;background:${sColor}20;color:${sColor};">熱量</th>
+            <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;background:${sColor}20;color:${sColor};">表出</th>
+            <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;background:${sColor}20;color:${sColor};">身体性</th>
+            <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;background:${sColor}20;color:${sColor};">口語度</th>
+            <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;background:${sColor}20;color:${sColor};">比喩度</th>
+          </tr>
+        </thead>
+        <tbody>`;
+    sortedAll.forEach((ex,i)=>{
+      const em=mapByName[ex.name];
+      const bg=i%2===0?'white':'#f8f6f3';
+      const c=catColor(ex.cat||'その他');
+      html+=`<tr style="background:${bg};font-size:10px;" onmouseenter="this.style.background='#f0ede8'" onmouseleave="this.style.background='${bg}'">
+        <td style="padding:6px 8px;border:1px solid #e8e5e0;font-size:12px;font-weight:700;color:${c};">${escH(ex.name)}${ex.reading?`<div style="font-size:9px;color:#6a6460;font-weight:400;letter-spacing:.06em;">${escH(ex.reading)}</div>`:''}</td>
+        <td style="padding:6px 8px;border:1px solid #e8e5e0;font-size:11px;font-weight:600;color:${c};">${escH(ex.cat||'その他')}</td>
+        <td style="padding:6px 8px;border:1px solid #e8e5e0;color:#2a2420;font-weight:600;font-size:12px;">${escH(ex.nuance||'')}</td>
+        ${em?`
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;${_exprSortKey==='heat'?'background:#fff0ec;':''}">${axBar(em.heat,EXMAP_COLORS.heat)}</td>
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;${_exprSortKey==='expr'?'background:#ecf0ff;':''}">${axBar(em.expr,EXMAP_COLORS.expr)}</td>
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;${_exprSortKey==='body'?'background:#ecf4ec;':''}">${axBar(em.body,EXMAP_COLORS.body)}</td>
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;${_exprSortKey==='coll'?'background:#f4ecff;':''}">${axBar(em.coll,EXMAP_COLORS.coll)}</td>
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;${_exprSortKey==='meta'?'background:#fff8ec;':''}">${axBar(em.meta,EXMAP_COLORS.meta)}</td>
+        `:`<td colspan="5" style="padding:6px 8px;border:1px solid #e8e5e0;color:#bcb8b1;font-size:9px;">—</td>`}
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+
+  } else {
+    // ── デフォルト：カテゴリ別グループ化 ──
+    const CAT_ORDER=['達成','関係','喪失・脅威','幸運','存在・意味','その他'];
+    const byCategory={};
+    expressions.forEach(ex=>{
+      const c=ex.cat||'その他';
+      (byCategory[c]=byCategory[c]||[]).push(ex);
+    });
+    const sortedCats=[...CAT_ORDER.filter(c=>byCategory[c]),...Object.keys(byCategory).filter(c=>!CAT_ORDER.includes(c))];
+
+    sortedCats.forEach(cat=>{
+      const items=byCategory[cat]||[];
+      const c=catColor(cat);
+      html+=`<div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;border-bottom:2px solid ${c};padding-bottom:4px;">
+          <span style="font-size:11px;font-weight:700;color:${c};letter-spacing:.08em;">${escH(cat)}</span>
+          <span style="font-size:9px;color:#8a817c;">${items.length}件</span>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-family:'Noto Sans JP',sans-serif;">
+          <thead>
+            <tr style="background:#d8d4ce;font-size:8px;letter-spacing:.12em;color:#2a2420;font-weight:700;">
+              <th style="padding:5px 8px;text-align:left;border:1px solid #c8c4be;">表現 / 読み</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid #c8c4be;">種別</th>
+              <th style="padding:5px 8px;text-align:left;border:1px solid #c8c4be;min-width:120px;">ニュアンス</th>
+              ${hasMap?`<th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;">熱量</th>
+              <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;">表出</th>
+              <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;">身体性</th>
+              <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;">口語度</th>
+              <th style="padding:5px 8px;text-align:center;border:1px solid #c8c4be;">比喩度</th>`:''}
+            </tr>
+          </thead>
+          <tbody>`;
+      items.forEach((ex,i)=>{
+        const em=mapByName[ex.name];
+        const bg=i%2===0?'white':'#f8f6f3';
+        const tip=escAttr(JSON.stringify({name:ex.name,reading:ex.reading||'',cat:ex.cat||cat,
+          kind:ex.kind||'',nuance:ex.nuance||'',color:c,mode:'exprMap',
+          heat:em?em.heat:undefined,expr:em?em.expr:undefined,body:em?em.body:undefined,
+          coll:em?em.coll:undefined,meta:em?em.meta:undefined}));
+        html+=`<tr style="background:${bg};font-size:10px;" data-info="${tip}"
+          onmouseenter="this.style.background='#f0ede8';stExprDelayed(event,this,true)" onmouseleave="this.style.background='${bg}';htDelayed()">
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;font-size:12px;font-weight:700;color:${c};">${escH(ex.name)}${ex.reading?`<div style="font-size:9px;color:#6a6460;font-weight:400;letter-spacing:.06em;">${escH(ex.reading)}</div>`:''}</td>
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;color:#4a4440;font-size:11px;font-weight:500;">${escH(ex.kind||'')}</td>
+          <td style="padding:6px 8px;border:1px solid #e8e5e0;color:#2a2420;font-weight:600;font-size:12px;">${escH(ex.nuance||'')}</td>
+          ${hasMap&&em?`
+            <td style="padding:6px 8px;border:1px solid #e8e5e0;">${axBar(em.heat,EXMAP_COLORS.heat)}</td>
+            <td style="padding:6px 8px;border:1px solid #e8e5e0;">${axBar(em.expr,EXMAP_COLORS.expr)}</td>
+            <td style="padding:6px 8px;border:1px solid #e8e5e0;">${axBar(em.body,EXMAP_COLORS.body)}</td>
+            <td style="padding:6px 8px;border:1px solid #e8e5e0;">${axBar(em.coll,EXMAP_COLORS.coll)}</td>
+            <td style="padding:6px 8px;border:1px solid #e8e5e0;">${axBar(em.meta,EXMAP_COLORS.meta)}</td>
+          `:hasMap?`<td colspan="5" style="padding:6px 8px;border:1px solid #e8e5e0;color:#bcb8b1;font-size:9px;">—</td>`:''}
+        </tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    });
+  }
+
+  el.innerHTML=html;
+  // 表現一覧用パネル更新（expressions をカテゴリ別に）
+  updateWordPanel('exprList', expressions);
+}
+
+// ── 表現マップ用ポップアップ ──
+function stExpr(e,el,fromPanel=false){
+  const popup=document.getElementById('popup');
+  const d=JSON.parse(el.dataset.info);
+  if(_popupPinned && _pinnedName === d.name) return;
+  const keepPinned = _popupPinned;
+  const c=d.color||'#e0afa0';
+  function bar5(label,val,color){
+    return `<div class="prow"><span class="plbl" style="color:${color};font-size:9px;">${label}</span>
+      <div class="ptrk"><div class="pfil" style="width:${val*10}%;background:${color};"></div></div>
+      <span class="pval" style="color:${color};">${val}</span></div>`;
+  }
+  const hasMapData = d.heat!==undefined && d.heat!==null;
+  popup.innerHTML=`
+    <div class="pw">${escH(d.name)}</div>
+    ${d.reading?`<div style="font-size:11px;color:#8a817c;margin-bottom:6px;letter-spacing:.12em;">${escH(d.reading)}</div>`:''}
+    ${d.cat?`<div class="ppcat"><span class="ppcn" style="color:${c};">${escH(d.cat)}</span></div>`:''}
+    ${hasMapData?`<div class="pbars">
+      ${bar5('熱量',d.heat,EXMAP_COLORS.heat)}
+      ${bar5('表出',d.expr,EXMAP_COLORS.expr)}
+      ${bar5('身体',d.body,EXMAP_COLORS.body)}
+      ${bar5('口語',d.coll,EXMAP_COLORS.coll)}
+      ${bar5('比喩',d.meta,EXMAP_COLORS.meta)}
+    </div>`:''}
+    ${d.kind?`<div style="margin-top:6px;font-size:10px;color:#6a6460;">${escH(d.kind)}</div>`:''}
+    ${d.nuance?`<div style="margin-top:4px;font-size:10px;color:#2a2420;font-weight:600;">${escH(d.nuance)}</div>`:''}
+    <div class="popup-pin-hint" style="margin-top:8px;padding-top:6px;border-top:1px solid #e8e4de;font-size:8px;letter-spacing:.06em;text-align:right;${keepPinned?'color:#507830;font-weight:700;':'color:#bcb8b1;'}">
+      ${keepPinned?'✕ クリックで閉じる':'クリックで固定'}
+    </div>`;
+  if(keepPinned){
+    _pinnedName=d.name;
+    popup.style.borderTop='3px solid #507830';
+    popup.style.boxShadow='0 6px 24px rgba(80,120,48,.25)';
+  } else {
+    popup.style.borderTop='3px solid var(--c-accent)';
+    popup.style.boxShadow='0 6px 24px rgba(0,0,0,.16)';
+  }
+  popup.style.display='block';
+  const pw=popup.offsetWidth,ph=popup.offsetHeight;
+  const panelEl=document.getElementById('wordPanel');
+  const panelRect=panelEl&&!panelEl.classList.contains('hidden')?panelEl.getBoundingClientRect():null;
+  const panelLeft=panelRect?panelRect.left:window.innerWidth;
+  let lx,ly;
+  if(fromPanel && panelRect){
+    lx=panelLeft-pw-8;
+    ly=e.clientY-12;
+  } else {
+    lx=e.clientX+14;
+    ly=e.clientY-12;
+    if(lx+pw>panelLeft-4) lx=e.clientX-pw-14;
+  }
+  if(lx<4) lx=4;
+  if(ly+ph>window.innerHeight-6) ly=window.innerHeight-ph-6;
+  if(ly<4) ly=4;
+  popup.style.left=lx+'px';popup.style.top=ly+'px';
+  popup.classList.add('show');
+}
+// 散布図用
+// 生オブジェクト版（バッジのgInfos用）
+function mkInfoScatterObj(w,c){
+  const rels=edges.filter(e=>e.a===w.name||e.b===w.name).map(e=>({
+    partner:e.a===w.name?e.b:e.a, label:e.l
+  }));
+  return {
+    name:w.name,x:w.x,y:w.y,s:w.s||5,dur:w.dur||'漸減',color:c,
+    cn:cats[w.cat]?.name||'',
+    reading:w.reading||'',memo:w.memo||'',
+    atmos:w.atmos||'',userTags:w.userTags||[],
+    y_abs:w.y_abs!==null&&w.y_abs!==undefined?w.y_abs:null,
+    y_ctx:w.y_ctx!==null&&w.y_ctx!==undefined?w.y_ctx:null,
+    source:w.source||[],srcReason:w.srcReason||'',
+    mode:'scatter', rels
+  };
+}
+function mkInfoObj(w,c){
+  const rels=edges.filter(e=>e.a===w.name||e.b===w.name).map(e=>({
+    partner:e.a===w.name?e.b:e.a, label:e.l
+  }));
+  return {
+    name:w.name,x:w.x,y:w.y,s:w.s||5,dur:w.dur||'漸減',color:c,
+    cn:cats[w.cat]?.name||'',
+    reading:w.reading||'',memo:w.memo||'',
+    atmos:w.atmos||'',userTags:w.userTags||[],
+    y_abs:w.y_abs!==null&&w.y_abs!==undefined?w.y_abs:null,
+    y_ctx:w.y_ctx!==null&&w.y_ctx!==undefined?w.y_ctx:null,
+    source:w.source||[],srcReason:w.srcReason||'',
+    mode:'source', rels
+  };
+}
+function mkInfoScatter(w,c){ return escAttr(JSON.stringify(mkInfoScatterObj(w,c))); }
+// ソース分類用（X軸=主体 w.s、バー表示=強度+主体）
+function mkInfo(w,c){ return escAttr(JSON.stringify(mkInfoObj(w,c))); }
+function st(e,el,fromPanel=false){
+  const popup=document.getElementById('popup');
+  const d=JSON.parse(el.dataset.info);
+  // ピン固定中は同じ語なら無視、別の語なら内容を更新してピン維持
+  if(_popupPinned && _pinnedName === d.name) return;
+  const keepPinned = _popupPinned; // 固定状態を引き継ぐか
+  const yAbs=d.y_abs!==null&&d.y_abs!==undefined;
+  const yCtx=d.y_ctx!==null&&d.y_ctx!==undefined;
+  const absUsed=yAbs&&!yCtx;
+  const ctxUsed=yCtx;
+  const srcMain=d.source&&d.source[0]||'';
+  const srcSub=d.source&&d.source.slice(1).join('・')||'';
+  const isScatter=(d.mode==='scatter');
+  popup.innerHTML=`
+    <div class="pw">${escH(d.name)}</div>
+    ${d.reading?`<div style="font-size:11px;color:#6a6460;margin-bottom:6px;font-family:'Noto Sans JP',sans-serif;letter-spacing:.12em;">${escH(d.reading)}</div>`:''}
+    <div class="pbars">
+      ${yCtx?`<div class="prow"><span class="plbl" style="color:${ctxUsed?d.color:'#888480'}">ctx★</span><div class="ptrk"><div class="pfil" style="width:${d.y_ctx*10}%;background:${d.color};"></div></div><span class="pval">${d.y_ctx}</span></div>`:''}
+      ${yAbs?`<div class="prow"><span class="plbl" style="color:${absUsed?d.color:'#888480'}">abs</span><div class="ptrk"><div class="pfil" style="width:${d.y_abs*10}%;background:${d.color};opacity:.5"></div></div><span class="pval" style="color:#5a5450">${d.y_abs}</span></div>`:''}
+      ${(!yCtx&&!yAbs)?bar('強度',d.y,d.color):''}
+      ${isScatter ? bar('内外',d.x,d.color)   : barMuted('内外',d.x,d.color)}
+      ${isScatter ? barMuted('主体',d.s,d.color) : bar('主体',d.s,d.color)}
+    </div>
+    <div class="pdur">持続 <span class="pdurv">${DUR[d.dur]||'〜'} ${escH(d.dur)}</span></div>
+    ${srcMain?`<div class="psrc"><span class="psrc-main" style="font-size:11px;font-weight:700;color:#b03a10;">${escH(srcMain)}</span>${srcSub?`<span class="psrc-sub" style="color:#4a4440;font-size:10px;"> ・ ${escH(srcSub)}</span>`:''}${d.srcReason?`<span class="psrc-reason" style="color:#5a5450;font-size:9px;"> — ${escH(d.srcReason)}</span>`:''}</div>`:''}
+    ${d.atmos?`<div class="patmos">空気感：${escH(d.atmos)}</div>`:''}
+    ${d.memo?`<div class="pmemo">${escH(d.memo)}</div>`:''}
+    ${d.userTags?.length?`<div class="ptags">${d.userTags.map(t=>`<span class="ptag">#${escH(t)}</span>`).join('')}</div>`:''}
+    ${d.rels&&d.rels.length?`<div class="prels"><div class="prelslbl">関係</div>${d.rels.map(r=>`<div class="prel"><span class="prelpart">${escH(r.partner)}</span><span class="prellbl">${escH(r.label)}</span></div>`).join('')}</div>`:''}
+    <div class="popup-pin-hint" style="margin-top:8px;padding-top:6px;border-top:1px solid #e8e4de;font-size:8px;letter-spacing:.06em;text-align:right;${keepPinned?'color:#507830;font-weight:700;':'color:#bcb8b1;'}">
+      ${keepPinned?'✕ クリックで閉じる':'クリックで固定'}
+    </div>`;
+  if(keepPinned){
+    _pinnedName=d.name;
+    popup.style.borderTop='3px solid #507830';
+  } else {
+    popup.style.borderTop='3px solid var(--c-accent)';
+  }
+  popup.style.display='block';
+  const pw=popup.offsetWidth,ph=popup.offsetHeight;
+  const panelEl=document.getElementById('wordPanel');
+  const panelRect=panelEl&&!panelEl.classList.contains('hidden')?panelEl.getBoundingClientRect():null;
+  const panelLeft=panelRect?panelRect.left:window.innerWidth;
+  let lx,ly;
+  if(fromPanel && panelRect){
+    lx=panelLeft-pw-8;
+    ly=e.clientY-12;
+  } else {
+    lx=e.clientX+14;
+    ly=e.clientY-12;
+    if(lx+pw>panelLeft-4) lx=e.clientX-pw-14;
+  }
+  if(lx<4) lx=4;
+  if(ly+ph>window.innerHeight-6) ly=window.innerHeight-ph-6;
+  if(ly<4) ly=4;
+  popup.style.left=lx+'px';popup.style.top=ly+'px';
+  popup.classList.add('show');
+}
+function ht(){
+  if(_popupPinned) return;
+  const popup=document.getElementById('popup');
+  if(popup.matches(':hover')) return;
+  popup.classList.remove('show');
+}
+
+// 閉じる処理は専用タイマーで遅延（開く予約と独立）
+let _closeTimer=null;
+function htSafe(){
+  clearTimeout(_closeTimer);
+  _closeTimer=setTimeout(()=>ht(), 150);
+}
+
+// ── 語一覧ホバー遅延（過敏防止） ──
+let _hoverTimer=null;
+function stDelayed(e,el){
+  const cx=e.clientX,cy=e.clientY;
+  clearTimeout(_hoverTimer);
+  clearTimeout(_closeTimer);
+  const name=el.dataset.hlname||el.dataset.name;
+  if(name) setElementHover(name);
+  // 前のポップアップが表示中で別の語なら即閉じる
+  const popup=document.getElementById('popup');
+  if(!_popupPinned && popup.classList.contains('show')){
+    const curName=popup.querySelector('.pw')?.textContent;
+    if(curName && curName!==name) popup.classList.remove('show');
+  }
+  _hoverTimer=setTimeout(()=>{ st({clientX:cx,clientY:cy},el,true); },380);
+}
+function stExprDelayed(e,el,fromPanel=false){
+  const cx=e.clientX,cy=e.clientY;
+  clearTimeout(_hoverTimer);
+  clearTimeout(_closeTimer);
+  const name=el.dataset.hlname||(el.dataset.info?JSON.parse(el.dataset.info).name:null);
+  if(name) setElementHover(name);
+  const popup=document.getElementById('popup');
+  if(!_popupPinned && popup.classList.contains('show')){
+    const curName=popup.querySelector('.pw')?.textContent;
+    if(curName && curName!==name) popup.classList.remove('show');
+  }
+  _hoverTimer=setTimeout(()=>{ stExpr({clientX:cx,clientY:cy},el,fromPanel); },380);
+}
+function htDelayed(){
+  clearTimeout(_hoverTimer);
+  clearElementHover();
+  htSafe();
+}
+
+// ── ホバーハイライト（全ビュー対応） ──
+let _dotHoverName=null;
+function setElementHover(name){
+  if(_dotHoverName===name) return;
+  clearElementHover();
+  _dotHoverName=name;
+
+  // ① SVG内●のハイライト（散布図・ソースビュー）
+  document.querySelectorAll('#ms [data-name]').forEach(g=>{
+    if(g.dataset.name===name){
+      const c=g.querySelector('circle');
+      if(c&&!c.dataset.hoverOrig){
+        c.dataset.hoverOrig=c.getAttribute('r')||'3';
+        c.setAttribute('r', String(parseFloat(c.dataset.hoverOrig)+4));
+        c.style.filter='drop-shadow(0 0 4px currentColor)';
+      }
+    }
+  });
+
+  // ② 表現マップのノード（テキストラベルの g 要素）
+  document.querySelectorAll('#ms g[data-info]').forEach(g=>{
+    try{
+      const d=JSON.parse(g.dataset.info);
+      if(d.name===name && d.mode==='exprMap'){
+        const txt=g.querySelector('text');
+        if(txt&&!txt.dataset.hoverOrigWeight){
+          txt.dataset.hoverOrigWeight=txt.getAttribute('font-weight')||'700';
+          txt.setAttribute('font-weight','900');
+          txt.style.filter='drop-shadow(0 0 3px currentColor)';
+        }
+      }
+    }catch(e_){}
+  });
+
+  // ③ 関係一覧の語タグ（g要素）
+  document.querySelectorAll('#ms g[onclick]').forEach(g=>{
+    const m=g.getAttribute('onclick')||'';
+    if(m.includes(`toggleNetHighlight('${name}')`)||m.includes(`toggleNetHighlight("${name}")`)){
+      const rect=g.querySelector('rect');
+      if(rect&&!rect.dataset.hoverOrigFill){
+        rect.dataset.hoverOrigFill=rect.getAttribute('fill')||'#f4f3ee';
+        rect.setAttribute('fill','#e8d4c8');
+      }
+    }
+  });
+
+  // ④ 表現一覧テーブル行
+  document.querySelectorAll('#exprListView tr[data-info]').forEach(tr=>{
+    try{
+      const d=JSON.parse(tr.dataset.info);
+      if(d.name===name){
+        if(!tr.dataset.hoverOrigBg) tr.dataset.hoverOrigBg=tr.style.background||'';
+        tr.style.background='#e8d4c8';
+      }
+    }catch(e_){}
+  });
+
+  // ⑤ 語一覧パネル内の他行（自分以外はそのまま、自分をさらに強調）
+  document.querySelectorAll('#wordPanel-body .wp-row[data-info]').forEach(row=>{
+    try{
+      const d=JSON.parse(row.dataset.info);
+      if(d.name===name && !row.dataset.hoverOrigBorder){
+        row.dataset.hoverOrigBorder=row.style.borderLeft||'';
+      }
+    }catch(e_){}
+  });
+}
+
+function clearElementHover(){
+  if(!_dotHoverName) return;
+
+  // ① SVG●リセット
+  document.querySelectorAll('#ms [data-name]').forEach(g=>{
+    const c=g.querySelector('circle');
+    if(c&&c.dataset.hoverOrig){
+      c.setAttribute('r', c.dataset.hoverOrig);
+      c.style.filter='';
+      delete c.dataset.hoverOrig;
+    }
+  });
+
+  // ② 表現マップノードリセット
+  document.querySelectorAll('#ms g[data-info] text').forEach(txt=>{
+    if(txt.dataset.hoverOrigWeight){
+      txt.setAttribute('font-weight', txt.dataset.hoverOrigWeight);
+      txt.style.filter='';
+      delete txt.dataset.hoverOrigWeight;
+    }
+  });
+
+  // ③ 関係一覧タグリセット
+  document.querySelectorAll('#ms g[onclick] rect[data-hover-orig-fill]').forEach(rect=>{
+    if(rect.dataset.hoverOrigFill!==undefined){
+      rect.setAttribute('fill', rect.dataset.hoverOrigFill);
+      delete rect.dataset.hoverOrigFill;
+    }
+  });
+  // dataset経由で確認
+  document.querySelectorAll('#ms g[onclick] rect').forEach(rect=>{
+    if(rect.dataset.hoverOrigFill!==undefined){
+      rect.setAttribute('fill', rect.dataset.hoverOrigFill);
+      delete rect.dataset.hoverOrigFill;
+    }
+  });
+
+  // ④ 表現一覧テーブル行リセット
+  document.querySelectorAll('#exprListView tr[data-info]').forEach(tr=>{
+    if(tr.dataset.hoverOrigBg!==undefined){
+      tr.style.background=tr.dataset.hoverOrigBg;
+      delete tr.dataset.hoverOrigBg;
+    }
+  });
+
+  _dotHoverName=null;
+}
+
+// ── グループホバーポップアップ（遅延表示） ──
+let _groupHoverTimer=null;
+let _popupPinned=false;
+let _pinnedName=null;
+
+// ── 散布図クリックハイライト ──
+function toggleScatterHL(name){
+  scatterHighlight = (scatterHighlight===name) ? null : name;
+  // 語一覧パネルの選択状態も更新
+  document.querySelectorAll('#wordPanel-body .wp-row').forEach(row=>{
+    const rn=row.dataset.hlname;
+    if(rn) row.classList.toggle('wp-row-hl', rn===scatterHighlight);
+  });
+  render();
+}
+
+// 語一覧パネルの行クリックで散布図をハイライト（scatter/sourceビューのみ）
+function wpRowClick(name){
+  if(view!=='s'&&view!=='m') return;
+  toggleScatterHL(name);
+}
+
+// ポップアップのクリック固定/解除
+function pinPopup(e){
+  e.stopPropagation();
+  const popup=document.getElementById('popup');
+  _popupPinned=!_popupPinned;
+  _pinnedName=_popupPinned?(popup.querySelector('.pw')?.textContent||null):null;
+  popup.style.cursor=_popupPinned?'default':'';
+  const hint=popup.querySelector('.popup-pin-hint');
+  if(hint){
+    hint.textContent=_popupPinned?'✕ クリックで閉じる':'クリックで固定';
+    hint.style.color=_popupPinned?'#507830':'#bcb8b1';
+    hint.style.fontWeight=_popupPinned?'700':'400';
+  }
+  if(_popupPinned){
+    popup.style.borderTop='3px solid #507830';
+    popup.style.boxShadow='0 6px 24px rgba(80,120,48,.25)';
+  } else {
+    popup.style.borderTop='3px solid var(--c-accent)';
+    popup.style.boxShadow='0 6px 24px rgba(0,0,0,.16)';
+    popup.classList.remove('show');
+  }
+}
+
+// ── 表現一覧 CSVエクスポート ──
+function exportExprCSV(){
+  if(!exprMaps||!exprMaps.length){showToast('表現マップデータがありません');return;}
+  const exByName={};
+  expressions.forEach(ex=>exByName[ex.name]=ex);
+  const header=['表現語','読み','カテゴリ','ニュアンス','熱量','表出','身体性','口語度','比喩度'];
+  const rows=exprMaps.map(em=>{
+    const ex=exByName[em.name]||{};
+    return [
+      em.name, ex.reading||em.reading||'', em.cat||'',
+      (ex.nuance||'').replace(/,/g,'、'),
+      em.heat||'', em.expr||'', em.body||'', em.coll||'', em.meta||''
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const bom='\uFEFF';
+  const csv=bom+[header.join(','),...rows].join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`表現マップ_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('CSVを書き出しました');
+}
+
+// ── グループポップアップ ──
+let gpopupOpen=false;
+let _gpopupInfos=null;
+
+// ホバーで開く（遅延付き）
+function stGroupHover(e,el){
+  const cx=e.clientX, cy=e.clientY;
+  clearTimeout(_groupHoverTimer);
+  _groupHoverTimer=setTimeout(()=>{
+    stGroup({clientX:cx,clientY:cy,stopPropagation:()=>{}},el);
+  }, 320);
+}
+
+// gpopupから外れたら閉じる（gpopup上に乗ったら閉じない）
+function htGroupHover(){
+  clearTimeout(_groupHoverTimer);
+  setTimeout(()=>{
+    const gp=document.getElementById('gpopup');
+    if(!gp.matches(':hover')){
+      // 非固定の開いている詳細を全部畳む
+      if(_gpopupInfos){
+        _gpopupInfos.forEach((_,idx)=>{
+          if(!_gDetailPinned.has(idx)){
+            const detail=document.getElementById(`gpd-${idx}`);
+            const item=document.getElementById(`gpi-${idx}`);
+            if(detail&&detail.style.display==='block'){detail.style.display='none';}
+            if(item){item.querySelector('span:last-child').textContent='▸';item.style.background='';}
+          }
+        });
+        _hoveredGDetailIdx=null;
+      }
+      closeGpopup();
+    }
+  }, 120);
+}
+
+function closeGpopup(){
+  const gp=document.getElementById('gpopup');
+  gp.style.display='none';
+  gp.style.width='';gp.style.minWidth='';gp.style.maxWidth='';
+  gpopupOpen=false;_gpopupInfos=null;
+  _gDetailPinned.clear();_hoveredGDetailIdx=null;
+}
+
+function stGroup(e,el){
+  e.stopPropagation();
+  const gp=document.getElementById('gpopup');
+  let rawInfos=el.dataset?.ginfos;
+  if(!rawInfos){let cur=el.parentElement;while(cur&&cur.tagName!=='svg'){if(cur.dataset?.ginfos){rawInfos=cur.dataset.ginfos;break;}cur=cur.parentElement;}}
+  if(!rawInfos)return;
+  const infos=JSON.parse(rawInfos);
+  _gpopupInfos=infos;
+  const words_data=infos;
+
+  gp.innerHTML=`
+    <div class="gpopup-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>▸ ${words_data.length} 語がこの位置に集中</span>
+      <button onclick="expandAllGDetails()" style="font-family:'Noto Sans JP',sans-serif;font-size:8px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border:1px solid var(--c-accent);background:none;color:var(--c-accent);cursor:pointer;border-radius:2px;transition:all .1s;" onmouseover="this.style.background='var(--c-accent)';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='var(--c-accent)'">全て展開</button>
+    </div>`
+    +words_data.map((d,idx)=>{
+      const durSym=DUR[d.dur]||'〜';
+      const srcMain=d.source&&d.source[0]||'';
+      return `<div class="gpopup-item" id="gpi-${idx}"
+        onmouseenter="hoverGDetail(${idx},true)"
+        onclick="toggleGDetail(${idx})">
+        <div style="flex:1">
+          <div style="display:flex;align-items:baseline;gap:5px;margin-bottom:2px;">
+            <span class="gpopup-item-name" style="color:${d.color}">${escH(d.name)}</span>
+            ${d.reading?`<span class="gpopup-item-reading">${escH(d.reading)}</span>`:''}
+          </div>
+          <div style="font-size:9px;color:#4a4440;line-height:1.5;letter-spacing:.04em;">
+            <div>強度 <span style="font-weight:700;color:#2a2420;">${d.y}</span>　${durSym}${escH(d.dur)}${srcMain?` ・ <span style="color:#a03010;font-weight:700;">${escH(srcMain)}</span>`:''}</div>
+          </div>
+        </div>
+        <span style="font-size:9px;color:#6a6460;">▸</span>
+      </div>
+      <div class="gpopup-detail" id="gpd-${idx}" style="display:none;"
+        onmouseenter="hoverGDetail(${idx},true)"></div>`;
+    }).join('');
+
+  gp.style.display='block';
+  gpopupOpen=true;
+  const initW=gp.offsetWidth;
+  gp.style.width=initW+'px';
+  gp.style.minWidth=initW+'px';
+  gp.style.maxWidth=initW+'px';
+  const pw=gp.offsetWidth,ph=gp.offsetHeight;
+  let lx=e.clientX+14,ly=e.clientY-12;
+  if(lx+pw>window.innerWidth-6)lx=e.clientX-pw-14;
+  if(ly+ph>window.innerHeight-6)ly=window.innerHeight-ph-6;
+  if(ly<4)ly=4;
+  gp.style.left=lx+'px';gp.style.top=ly+'px';
+}
+
+function htGroup(){}
+
+// 全て展開ボタン
+function expandAllGDetails(){
+  if(!_gpopupInfos)return;
+  _gpopupInfos.forEach((_,idx)=>{
+    const detail=document.getElementById(`gpd-${idx}`);
+    if(detail&&detail.style.display!=='block'){
+      _gDetailPinned.add(idx);
+      openGDetail(idx);
+    }
+  });
+}
+
+// ホバーで詳細を自動開閉（クリックで固定したものは閉じない）
+let _hoveredGDetailIdx=null;
+let _gDetailHoverTimer=null;
+let _gDetailPinned=new Set();
+
+function hoverGDetail(idx, entering){
+  clearTimeout(_gDetailHoverTimer);
+  if(entering){
+    // 前のアイテムの非固定詳細を閉じる
+    if(_hoveredGDetailIdx!==null && _hoveredGDetailIdx!==idx && !_gDetailPinned.has(_hoveredGDetailIdx)){
+      const prev=document.getElementById(`gpd-${_hoveredGDetailIdx}`);
+      const prevItem=document.getElementById(`gpi-${_hoveredGDetailIdx}`);
+      if(prev){prev.style.display='none';}
+      if(prevItem){prevItem.querySelector('span:last-child').textContent='▸';prevItem.style.background='';}
+    }
+    _hoveredGDetailIdx=idx;
+    _gDetailHoverTimer=setTimeout(()=>{
+      if(document.getElementById(`gpd-${idx}`)?.style.display!=='block'){
+        _gDetailPinned.add(idx); // ホバーで開いたものも固定扱いにする
+        openGDetail(idx);
+      }
+    },160);
+  }
+  // leaveは何もしない。gpopup全体のleaveで閉じる処理はhtGroupHoverが担当
+}
+
+function openGDetail(idx){
+  const detail=document.getElementById(`gpd-${idx}`);
+  const item=document.getElementById(`gpi-${idx}`);
+  if(!detail||!_gpopupInfos)return;
+  const d=_gpopupInfos[idx];
+  const yAbs=d.y_abs!==null&&d.y_abs!==undefined;
+  const yCtx=d.y_ctx!==null&&d.y_ctx!==undefined;
+  const srcMain=d.source&&d.source[0]||'';
+  const srcSub=d.source&&d.source.slice(1).join('・')||'';
+  const rels=d.rels||[];
+  detail.style.display='block';
+  if(item){item.querySelector('span:last-child').textContent='▾';item.style.background='#f0ede8';}
+  detail.innerHTML=`
+    <div style="background:#f8f5f0;border-top:2px solid ${d.color};padding:8px 12px 10px;box-sizing:border-box;">
+    <div class="pbars" style="margin-bottom:7px;">
+      ${yCtx?`<div class="prow"><span class="plbl" style="color:${d.color};font-size:9px;">ctx★</span><div class="ptrk"><div class="pfil" style="width:${d.y_ctx*10}%;background:${d.color};"></div></div><span class="pval">${d.y_ctx}</span></div>`:''}
+      ${yAbs?`<div class="prow"><span class="plbl" style="color:#5a4a40;font-size:9px;">abs</span><div class="ptrk"><div class="pfil" style="width:${d.y_abs*10}%;background:${d.color};opacity:.5"></div></div><span class="pval" style="color:#3a3430">${d.y_abs}</span></div>`:''}
+      ${(!yCtx&&!yAbs)?bar('強度',d.y,d.color):''}
+      ${bar('内外',d.x,d.color)}
+      ${bar('主体',d.s,d.color)}
+    </div>
+    <div class="pdur" style="border-top:1px solid #d8d4ce;padding-top:6px;margin-bottom:5px;">持続 <span class="pdurv">${DUR[d.dur]||'〜'} ${escH(d.dur)}</span></div>
+    ${srcMain?`<div class="psrc"><span style="font-size:11px;font-weight:700;color:#b03a10;">${escH(srcMain)}</span>${srcSub?`<span style="color:#3a3430;font-size:10px;font-weight:600;"> ・ ${escH(srcSub)}</span>`:''}${d.srcReason?`<span style="color:#4a4440;font-size:9px;"> — ${escH(d.srcReason)}</span>`:''}</div>`:''}
+    ${d.atmos?`<div class="patmos">空気感：${escH(d.atmos)}</div>`:''}
+    ${d.memo?`<div class="pmemo">${escH(d.memo)}</div>`:''}
+    ${rels.length?`<div class="prels"><div class="prelslbl">関係</div>${rels.map(r=>`<div class="prel"><span class="prelpart">${escH(r.partner)}</span><span class="prellbl">${escH(r.label)}</span></div>`).join('')}</div>`:''}
+    </div>`;
+  const gp=document.getElementById('gpopup');
+  const gpH=gp.offsetHeight;
+  const gpW=gp.offsetWidth;
+  const curTop=parseInt(gp.style.top)||0;
+  const curLeft=parseInt(gp.style.left)||0;
+  // 下にはみ出たら上に寄せる、上にはみ出たらそこで止める
+  const newTop=Math.max(4, Math.min(curTop, window.innerHeight-gpH-6));
+  gp.style.top=newTop+'px';
+  // 右にはみ出たら左に寄せる
+  if(curLeft+gpW>window.innerWidth-6) gp.style.left=Math.max(4,window.innerWidth-gpW-6)+'px';
+}
+
+function toggleGDetail(idx){
+  const detail=document.getElementById(`gpd-${idx}`);
+  const item=document.getElementById(`gpi-${idx}`);
+  if(!detail||!_gpopupInfos)return;
+  if(detail.style.display==='block'){
+    _gDetailPinned.delete(idx);
+    detail.style.display='none';
+    if(item){item.querySelector('span:last-child').textContent='▸';item.style.background='';}
+    return;
+  }
+  _gDetailPinned.add(idx);
+  openGDetail(idx);
+}
+
+// ポップアップ外クリックで閉じる
+document.addEventListener('click',e=>{
+  const gp=document.getElementById('gpopup');
+  if(gpopupOpen&&!gp.contains(e.target)){
+    closeGpopup();
+  }
+  // ピン固定ポップアップの外部クリック解除
+  const popup=document.getElementById('popup');
+  if(_popupPinned&&!popup.contains(e.target)){
+    _popupPinned=false;
+    _pinnedName=null;
+    popup.style.cursor='';
+    popup.style.borderTop='3px solid var(--c-accent)';
+    popup.style.boxShadow='0 6px 24px rgba(0,0,0,.16)';
+    popup.classList.remove('show');
+  }
+  // 語一覧パネル外クリックで閉じる（関係一覧ビューでは無効）
+  const wp=document.getElementById('wordPanel');
+  const btn=document.getElementById('wordPanelToggleBtn');
+  if(view!=='n'&&view!=='x'&&view!=='s'&&_wordPanelVisible&&!wp.contains(e.target)&&!btn.contains(e.target)){
+    toggleWordPanel();
+  }
+});
+
+// ── フローティング語リストパネル ──
+let _wordPanelVisible=false;
+
+function toggleWordPanel(){
+  if(view==='n'||view==='x'||view==='s'){
+    const body=document.getElementById('wordPanel-body');
+    const isCollapsed=body.style.display==='none';
+    body.style.display=isCollapsed?'':'none';
+    const closeBtn=document.getElementById('wordPanel-close');
+    if(closeBtn) closeBtn.textContent=isCollapsed?'×':'▶';
+    return;
+  }
+  _wordPanelVisible=!_wordPanelVisible;
+  document.getElementById('wordPanel').classList.toggle('hidden',!_wordPanelVisible);
+  const _btn=document.getElementById('wordPanelBtn');
+  if(_btn) _btn.classList.toggle('hidden',_wordPanelVisible);
+}
+
+function updateWordPanel(mode,data,opts={}){
+  const panelEl=document.getElementById('wordPanel');
+  const btn=document.getElementById('wordPanelToggleBtn');
+  const btnCount=document.getElementById('wordPanelBtnCount');
+  const body=document.getElementById('wordPanel-body');
+  const CAT_COLORS={'達成':'#c05020','関係':'#2050b0','喪失・脅威':'#404040','幸運':'#2e7a38','存在・意味':'#6840b0','その他':'#8a817c'};
+  const CAT_ORDER=['達成','関係','喪失・脅威','幸運','存在・意味','その他'];
+
+  // データ有無チェック
+  const hasData=data&&(Array.isArray(data)?(data.length>0):(data.some&&data.some(d=>d.length>0)));
+  if(!hasData){
+    panelEl.classList.add('hidden');
+    if(btn){btn.style.opacity='0.3';btn.style.pointerEvents='none';}
+    if(btnCount)btnCount.textContent='';
+    return;
+  }
+
+  // 件数
+  let totalCount=0;
+  if(mode==='scatter'||mode==='expr'||mode==='exprList'||mode==='net') totalCount=data.length;
+  else{const u=new Set();data.forEach(p=>p.forEach(i=>u.add(i.w.name)));totalCount=u.size;}
+  if(btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+  if(btnCount)btnCount.textContent=`(${totalCount})`;
+  // 関係一覧ビューでは常時表示、他は_wordPanelVisibleに従う
+  const isNetView=view==='n'||view==='x'||view==='s';
+  panelEl.classList.toggle('hidden',!isNetView&&!_wordPanelVisible);
+
+  // ── グループパレット（散布図まとめ語） ──
+  const GP_BG =['#fff0e8','#e8f0ff','#e8f4e8','#f8f0e0','#f0e8f8','#e8f8f8'];
+  const GP_BD =['#c05020','#2050b0','#2e7a38','#906020','#6840b0','#207070'];
+
+  if(mode==='net'){
+    // 関係一覧ビュー：表現マップ語一覧と同じデザイン
+    // 語名（大・カテゴリ色）／フリガナ（小・グレー）／意味（中・#4a4440）／強度数字（右端）
+    const allSorted=[...data].sort((a,b)=>b.y-a.y);
+    const labelWords=netHighlightLabel
+      ? new Set((netGroupsByLabel[netHighlightLabel]||[]).flatMap(e=>[e.a,e.b]))
+      : null;
+    const sorted=labelWords
+      ? [...allSorted].sort((a,b)=>{
+          const ai=labelWords.has(a.name)?0:1;
+          const bi=labelWords.has(b.name)?0:1;
+          return ai-bi||(b.y-a.y);
+        })
+      : allSorted;
+
+    let html='';
+    sorted.forEach(w=>{
+      const c=cats[w.cat]?.color||'#607060';
+      const info=mkInfoScatter(w,c);
+      const inLabel=labelWords&&labelWords.has(w.name);
+      const isHL=(netHighlight===w.name)||inLabel;
+      const reading=w.reading||'';
+      const memo=(w.memo||w.note||w.srcReason||'').trim();
+      const shortMemo=memo?memo.split(/[。．]/)[0].slice(0,30):'';
+      html+=`<div class="wp-row${isHL?' wp-row-hl':''}" data-info="${info}" data-hlname="${escAttr(w.name)}"
+        onmouseenter="stDelayed(event,this)" onmouseleave="htDelayed()"
+        onclick="toggleNetHighlight('${escAttr(w.name)}')"
+        style="flex-direction:column;align-items:flex-start;gap:0px;padding:6px 10px 5px;cursor:pointer;border-left:3px solid ${isHL?c:'transparent'};">
+        <div style="display:flex;align-items:baseline;width:100%;gap:5px;">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.02em;color:${c};">${escH(w.name)}</span>
+          ${reading?`<span style="font-size:8.5px;color:#8a817c;letter-spacing:.08em;flex-shrink:0;">${escH(reading)}</span>`:''}
+          <span style="font-size:9px;color:${c};font-weight:700;margin-left:auto;flex-shrink:0;">${w.y}</span>
+        </div>
+        ${shortMemo?`<span style="font-size:9.5px;color:#4a4440;line-height:1.4;margin-top:1px;">${escH(shortMemo)}</span>`:''}
+      </div>`;
+    });
+    body.innerHTML=html;
+
+  }else if(mode==='scatter'){
+    // scatterGroups 情報を opts から取得
+    const {scatterGroups:sg=[],fw:fwRef=[]}=opts;
+    const nameToGi={};
+    sg.forEach((g,gi)=>{if(g.members.length>1)g.members.forEach(wi=>{if(fwRef[wi])nameToGi[fwRef[wi].name]=gi;});});
+
+    // グループカラー：識別しやすい6色
+    const GP_BD2=['#d44000','#1a6abf','#1e8a3a','#8b1abf','#c0960a','#0a7a8a'];
+
+    const allSorted=[...data].sort((a,b)=>b.y-a.y);
+
+    let html='';
+    allSorted.forEach(w=>{
+      const c=cats[w.cat]?.color||'#607060';
+      const info=mkInfoScatter(w,c);
+      const gi=nameToGi[w.name];
+      const isGrouped=(gi!==undefined);
+      const gColor=isGrouped?GP_BD2[gi%GP_BD2.length]:null;
+      const borderColor=isGrouped?gColor:c;
+      const isHL=(scatterHighlight===w.name);
+      const reading=w.reading||'';
+      const memo=(w.memo||w.note||w.srcReason||'').trim();
+      const shortMemo=memo?memo.split(/[。．]/)[0].slice(0,30):'';
+      html+=`<div class="wp-row${isHL?' wp-row-hl':''}" data-info="${info}" data-hlname="${escAttr(w.name)}"
+        onmouseenter="stDelayed(event,this)" onmouseleave="htDelayed()"
+        onclick="wpRowClick('${escAttr(w.name)}')"
+        style="flex-direction:column;align-items:flex-start;gap:0px;padding:6px 10px 5px;cursor:pointer;border-left:3px solid ${borderColor};">
+        <div style="display:flex;align-items:baseline;width:100%;gap:5px;">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.02em;color:${c};">${escH(w.name)}</span>
+          ${reading?`<span style="font-size:8.5px;color:#8a817c;letter-spacing:.08em;flex-shrink:0;">${escH(reading)}</span>`:''}
+          <span style="font-size:9px;color:${c};font-weight:700;margin-left:auto;flex-shrink:0;">${w.y}</span>
+        </div>
+        ${shortMemo?`<span style="font-size:9.5px;color:#4a4440;line-height:1.4;margin-top:1px;">${escH(shortMemo)}</span>`:''}
+      </div>`;
+    });
+    body.innerHTML=html;
+
+  }else if(mode==='expr'){
+    const exByName={};
+    expressions.forEach(ex=>exByName[ex.name]=ex);
+
+    // ソート軸に応じて並べ替え
+    const sorted2=exprSortAxis==='cat'
+      ? data  // カテゴリ別はそのまま
+      : [...data].sort((a,b)=>(b[exprSortAxis]||0)-(a[exprSortAxis]||0));
+
+    if(exprSortAxis==='cat'){
+      // カテゴリ別グループ表示
+      const byCategory={};
+      sorted2.forEach(em=>{const c=em.cat||'その他';(byCategory[c]=byCategory[c]||[]).push(em);});
+      const sortedCats=[...CAT_ORDER.filter(c=>byCategory[c]),...Object.keys(byCategory).filter(c=>!CAT_ORDER.includes(c))];
+      body.innerHTML=sortedCats.map(cat=>{
+        const c=CAT_COLORS[cat]||'#8a817c';
+        const rows=byCategory[cat].map(em=>{
+          const ex=exByName[em.name]||{};
+          const tip=escAttr(JSON.stringify({name:em.name,reading:em.reading||ex.reading||'',cat:em.cat,
+            heat:em.heat,expr:em.expr,body:em.body,coll:em.coll,meta:em.meta,color:c,mode:'exprMap'}));
+          const isHL=(exprHighlight===em.name);
+          return `<div class="wp-row${isHL?' wp-row-hl':''}" data-hlname="${escAttr(em.name)}" data-info="${tip}"
+            onmouseenter="stExprDelayed(event,this,true)" onmouseleave="htDelayed()"
+            onclick="toggleExprHighlight('${escAttr(em.name)}')"
+            style="flex-direction:column;align-items:flex-start;gap:1px;padding:5px 10px 4px;cursor:pointer;border-left:3px solid ${isHL?c:'transparent'};">
+            <span class="wp-name" style="color:${c};font-weight:${isHL?'700':'600'};">${escH(em.name)}</span>
+            ${ex.nuance?`<span style="font-size:9.5px;color:#4a4440;line-height:1.4;">${escH(ex.nuance)}</span>`:''}
+          </div>`;
+        }).join('');
+        return `<div class="wp-section" style="background:${c};">${escH(cat)}</div>${rows}`;
+      }).join('');
+    } else {
+      // 軸ソート：数値バー付きフラットリスト
+      const axisLabel={heat:'熱量',expr:'表出',body:'身体',coll:'口語',meta:'比喩'};
+      body.innerHTML=sorted2.map(em=>{
+        const c=CAT_COLORS[em.cat]||'#8a817c';
+        const ex=exByName[em.name]||{};
+        const val=em[exprSortAxis]||0;
+        const tip=escAttr(JSON.stringify({name:em.name,reading:em.reading||ex.reading||'',cat:em.cat,
+          heat:em.heat,expr:em.expr,body:em.body,coll:em.coll,meta:em.meta,color:c,mode:'exprMap'}));
+        const isHL=(exprHighlight===em.name);
+        return `<div class="wp-row${isHL?' wp-row-hl':''}" data-hlname="${escAttr(em.name)}" data-info="${tip}"
+          onmouseenter="stExprDelayed(event,this)" onmouseleave="htDelayed()"
+          onclick="toggleExprHighlight('${escAttr(em.name)}')"
+          style="flex-direction:column;align-items:flex-start;gap:1px;padding:5px 10px 4px;cursor:pointer;border-left:3px solid ${isHL?c:'transparent'};">
+          <div style="display:flex;align-items:baseline;width:100%;gap:4px;">
+            <span class="wp-name" style="color:${c};font-weight:${isHL?'700':'600'};">${escH(em.name)}</span>
+            <span style="font-size:9px;color:${c};font-weight:700;margin-left:auto;">${val}</span>
+          </div>
+          ${ex.nuance?`<span style="font-size:9.5px;color:#4a4440;line-height:1.4;">${escH(ex.nuance)}</span>`:''}
+        </div>`;
+      }).join('');
+    }
+
+  }else if(mode==='exprList'){
+    // 表現一覧：カテゴリ別セクション・ニュアンス付き
+    const byCategory={};
+    data.forEach(ex=>{const c=ex.cat||'その他';(byCategory[c]=byCategory[c]||[]).push(ex);});
+    const sortedCats=[...CAT_ORDER.filter(c=>byCategory[c]),...Object.keys(byCategory).filter(c=>!CAT_ORDER.includes(c))];
+    const emByName2={};
+    exprMaps.forEach(em=>emByName2[em.name]=em);
+    body.innerHTML=sortedCats.map(cat=>{
+      const c=CAT_COLORS[cat]||'#8a817c';
+      const rows=byCategory[cat].map(ex=>{
+        const em=emByName2[ex.name];
+        const tip=escAttr(JSON.stringify({name:ex.name,reading:ex.reading||'',cat:ex.cat||cat,
+          kind:ex.kind||'',nuance:ex.nuance||'',color:c,mode:'exprMap',
+          heat:em?em.heat:undefined,expr:em?em.expr:undefined,body:em?em.body:undefined,
+          coll:em?em.coll:undefined,meta:em?em.meta:undefined}));
+        return `<div class="wp-row" data-info="${tip}" onmouseenter="stExprDelayed(event,this)" onmouseleave="htDelayed()"
+          style="flex-direction:column;align-items:flex-start;gap:1px;padding:5px 10px 4px;">
+          <span class="wp-name" style="color:${c};">${escH(ex.name)}</span>
+          ${ex.nuance?`<span style="font-size:8px;color:#4a4440;line-height:1.4;">${escH(ex.nuance)}</span>`:''}
+        </div>`;
+      }).join('');
+      return `<div class="wp-section" style="background:${c};">${escH(cat)}</div>${rows}`;
+    }).join('');
+
+  }else{
+    // ソース分類ビュー
+    const PANEL_NAMES=['達成','関係','喪失・脅威','その他'];
+    const PANEL_COLORS=['#c05020','#2050b0','#404040','#386838'];
+    body.innerHTML=data.map((pWords,pi)=>{
+      if(!pWords.length)return'';
+      const uniqueWords=new Map();
+      pWords.forEach(item=>{
+        const existing=uniqueWords.get(item.w.name);
+        if(!existing||item.isPrimary)uniqueWords.set(item.w.name,item);
+      });
+      const sorted=[...uniqueWords.values()].sort((a,b)=>b.w.y-a.w.y);
+      const rows=sorted.map(({w,panel:pn,isPrimary})=>{
+        let dc=pn.dot;
+        if(pi===3&&pn.dotOf){const s=w.source&&w.source[0]||'';dc=pn.dotOf(s).dot;}
+        if(!isPrimary)dc='#bcb8b1';
+        const barW=Math.round((w.y/10)*24);
+        const info=mkInfo(w,dc);
+        const isHL=(scatterHighlight===w.name);
+        return `<div class="wp-row${isHL?' wp-row-hl':''}" data-info="${info}" data-hlname="${escAttr(w.name)}" onmouseenter="stDelayed(event,this)" onmouseleave="htDelayed()" onclick="wpRowClick('${escAttr(w.name)}')">
+          <span class="wp-name" style="${!isPrimary?'opacity:0.7;':''}">${escH(w.name)}</span>
+          <span class="wp-y" style="color:${dc};font-weight:700;">${w.y}</span>
+        </div>`;
+      }).join('');
+      return `<div class="wp-section" style="background:${PANEL_COLORS[pi]};">${PANEL_NAMES[pi]}</div>${rows}`;
+    }).join('');
+  }
+}
+
+function bar(l,v,c){
+  return`<div class="prow">
+    <span class="plbl">${escH(l)}</span>
+    <div class="ptrk"><div class="pfil" style="width:${v*10}%;background:${c};"></div></div>
+    <span class="pval">${v}</span>
+  </div>`;
+}
+function barMuted(l,v,c){
+  return`<div class="prow" style="opacity:.45">
+    <span class="plbl" style="color:#b0aca8">${escH(l)}</span>
+    <div class="ptrk"><div class="pfil" style="width:${v*10}%;background:#c8c4be;"></div></div>
+    <span class="pval" style="color:#b0aca8">${v}</span>
+  </div>`;
+}
+
+// ── 5軸ヘルプパネル ──
+let _helpVisible = false;
+function toggleHelp(){
+  _helpVisible = !_helpVisible;
+  const panel = document.getElementById('helpPanel');
+  // 表現一覧ビューのときはexprListView内の右上に表示
+  if(_helpVisible && view==='e'){
+    panel.style.top='8px';
+    panel.style.left='auto';
+    panel.style.right='8px';
+  } else {
+    panel.style.top='8px';
+    panel.style.left='8px';
+    panel.style.right='auto';
+  }
+  panel.style.display = _helpVisible ? 'block' : 'none';
+  const btn = document.getElementById('helpBtn');
+  if(!btn) return;
+  if(_helpVisible){
+    btn.style.background = 'var(--c-accent)';
+    btn.style.color = '#2a1a10';
+    btn.style.borderColor = 'var(--c-accent)';
+    btn.style.fontWeight = '700';
+    btn.onmouseover = null;
+    btn.onmouseout  = null;
+  } else {
+    btn.style.background = 'none';
+    btn.style.color = 'var(--c-muted)';
+    btn.style.borderColor = 'var(--c-border)';
+    btn.style.fontWeight = '500';
+    btn.onmouseover = function(){this.style.borderColor='var(--c-accent)';this.style.color='var(--c-accent)';};
+    btn.onmouseout  = function(){this.style.borderColor='var(--c-border)';this.style.color='var(--c-muted)';};
+  }
+}
+
+
+function zi(){zoom=Math.min(2.5,zoom+0.1);az();}
+function zo(){zoom=Math.max(0.3,zoom-0.1);az();}
+function zr(){zoom=1;az();}
+function az(){
+  document.getElementById('ms').style.transform=`scale(${zoom})`;
+  document.getElementById('ms').style.transformOrigin='center center';
+  document.getElementById('zv').textContent=Math.round(zoom*100)+'%';
+}
+
+// ── スナップショット管理 ──
+const SNAP_KEY='emotion_map_snapshots_v1';
+let selectedFixWords = new Set();
+
+function getSnaps(){
+  try{return JSON.parse(localStorage.getItem(SNAP_KEY)||'[]');}catch{return[];}
+}
+function setSnaps(arr){localStorage.setItem(SNAP_KEY,JSON.stringify(arr));}
+
+function toggleFixWord(btn, word) {
+  btn.classList.toggle('active');
+  if (btn.classList.contains('active')) {
+    selectedFixWords.add(word);
+  } else {
+    selectedFixWords.delete(word);
+  }
+  updateSnapPreview();
+}
+
+function updateSnapPreview() {
+  const baseName = document.getElementById('snapName').value.trim();
+  const custom1 = document.getElementById('snapCustom1').value.trim();
+  const custom2 = document.getElementById('snapCustom2').value.trim();
+  const isPrefix = document.querySelector('input[name="fixPos"]:checked').value === 'prefix';
+  
+  const parts = [];
+  
+  // 固定ワードを追加（選択順）
+  selectedFixWords.forEach(word => parts.push(word));
+  
+  // 自由入力を追加
+  if (custom1) parts.push(custom1);
+  if (custom2) parts.push(custom2);
+  
+  // 接頭辞/接尾辞として組み立て
+  let finalName = '';
+  if (isPrefix) {
+    finalName = parts.join('') + baseName;
+  } else {
+    finalName = baseName + parts.join('');
+  }
+  
+  document.getElementById('snapPreview').textContent = finalName || '（プレビュー）';
+}
+
+function openSnapModal(){
+  renderSnapList();
+  document.getElementById('snapModal').classList.remove('hidden');
+  document.getElementById('snapName').focus();
+  const cur=gv('cfgT')||'';
+  if(cur&&cur!=='感情語の地図')document.getElementById('snapName').value=cur;
+  updateSnapPreview();
+}
+function closeSnapModal(){
+  document.getElementById('snapModal').classList.add('hidden');
+}
+
+// ── テキスト拡大モーダル ──
+function openTextModal(){
+  const el=document.getElementById('paLarge');
+  el.value=document.getElementById('pa').value;
+  document.getElementById('textModal').classList.remove('hidden');
+  el.focus();
+}
+function closeTextModal(){
+  // 閉じる前に内容を小テキストエリアに同期
+  document.getElementById('pa').value=document.getElementById('paLarge').value;
+  document.getElementById('textModal').classList.add('hidden');
+}
+function loadFromModal(){
+  // 拡大エリアの内容を小エリアに同期してから読み込み
+  document.getElementById('pa').value=document.getElementById('paLarge').value;
+  closeTextModal();
+  loadManual();
+}
+
+function saveSnap(){
+  const baseName = document.getElementById('snapName').value.trim();
+  if(!baseName){showToast('ベース名を入力してください');return;}
+  if(!words.length){showToast('データがありません');return;}
+  
+  // プレビューから完全なファイル名を取得
+  const fullName = document.getElementById('snapPreview').textContent;
+  if(fullName === '（プレビュー）'){showToast('ベース名を入力してください');return;}
+  
+  const snaps=getSnaps();
+  const now=new Date();
+  const ts=`${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  // 同名があれば上書き確認なしで上書き
+  const idx=snaps.findIndex(s=>s.name===fullName);
+  const snap={
+    name: fullName, ts,
+    words:JSON.parse(JSON.stringify(words)),
+    edges:JSON.parse(JSON.stringify(edges)),
+    expressions:JSON.parse(JSON.stringify(expressions)),
+    exprMaps:JSON.parse(JSON.stringify(exprMaps)),
+    cfg:{
+      T:gv('cfgT'),xL:gv('cXL'),xR:gv('cXR'),yB:gv('cYB'),yT:gv('cYT'),
+      qTL:gv('qTL'),qTR:gv('qTR'),qBL:gv('qBL'),qBR:gv('qBR')
+    }
+  };
+  if(idx>=0)snaps[idx]=snap;
+  else snaps.unshift(snap);
+  setSnaps(snaps);
+  showToast(`「${fullName}」を保存しました`);
+  renderSnapList();
+  // 保存後、入力欄とボタンをリセット
+  document.getElementById('snapName').value='';
+  document.getElementById('snapCustom1').value='';
+  document.getElementById('snapCustom2').value='';
+  document.querySelectorAll('.fix-word-btn.active').forEach(btn => btn.classList.remove('active'));
+  selectedFixWords.clear();
+  updateSnapPreview();
+}
+
+function loadSnap(idx){
+  const snaps=getSnaps();
+  const snap=snaps[idx];
+  if(!snap)return;
+  words=snap.words;
+  edges=snap.edges;
+  expressions=snap.expressions||[];
+  exprMaps=snap.exprMaps||[];
+  // 設定値を復元
+  if(snap.cfg){
+    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';}
+    set('cfgT',snap.cfg.T);set('cXL',snap.cfg.xL);set('cXR',snap.cfg.xR);
+    set('cYB',snap.cfg.yB);set('cYT',snap.cfg.yT);
+    set('qTL',snap.cfg.qTL);set('qTR',snap.cfg.qTR);
+    set('qBL',snap.cfg.qBL);set('qBR',snap.cfg.qBR);
+  }
+  // 手動入力欄にデータを復元（編集・再読み込みできるよう）
+  const paEl=document.getElementById('pa');
+  if(paEl&&words.length){
+    const wordLines=words.map(w=>{
+      let line=w.name;
+      if(w.y_abs!==null&&w.y_abs!==undefined)line+=`, 強度_abs:${w.y_abs}`;
+      if(w.y_ctx!==null&&w.y_ctx!==undefined)line+=`, 強度_ctx:${w.y_ctx}`;
+      if(w.y_abs===null&&w.y_ctx===null)line+=`, 強度:${w.y}`;
+      line+=`, 内外:${w.x}, 主体:${w.s||5}`;
+      line+=`, 持続:${w.dur||'漸減'}`;
+      if(w.source&&w.source.length)line+=`, ソース:${w.source.join('・')}`;
+      if(w.srcReason)line+=`, ソース理由:${w.srcReason}`;
+      if(w.reading)line+=`, 読み:${w.reading}`;
+      if(w.memo)line+=`, memo:${w.memo}`;
+      if(w.atmos)line+=`, 空気感:${w.atmos}`;
+      return line;
+    });
+    let txt='# 見出し語\n'+wordLines.join('\n');
+    if(expressions.length){
+      const exLines=expressions.map(ex=>{
+        let l=ex.name;
+        if(ex.kind)l+=`, 種別:${ex.kind}`;
+        if(ex.nuance)l+=`, ニュアンス:${ex.nuance}`;
+        if(ex.cat)l+=`, 主カテゴリ:${ex.cat}`;
+        if(ex.reading)l+=`, 読み:${ex.reading}`;
+        return l;
+      });
+      txt+='\n\n# 表現\n'+exLines.join('\n');
+    }
+    if(exprMaps.length){
+      const emLines=exprMaps.map(em=>{
+        return `${em.name}, 熱量:${em.heat}, 表出:${em.expr}, 身体性:${em.body}, 口語度:${em.coll}, 比喩度:${em.meta}${em.cat?`, 主カテゴリ:${em.cat}`:''}${em.reading?`, 読み:${em.reading}`:''}`;
+      });
+      txt+='\n\n# 表現マップ\n'+emLines.join('\n');
+    }
+    if(edges.length){
+      txt+='\n\n# 関係\n'+edges.map(e=>`${e.a}-${e.b}, ${e.l}`).join('\n');
+    }
+    paEl.value=txt;
+  }
+  // 「表示中」件数も更新
+  document.getElementById('connectCount').textContent=`✓ ${words.length}語 · ${expressions.length}表現 · ${edges.length}関係`;
+  npos={};activeAtmos=new Set();activeGroups=new Set();
+  renderChips();render();
+  showToast(`「${snap.name}」を読み込みました`);
+  closeSnapModal();
+}
+
+function deleteSnap(idx){
+  const snaps=getSnaps();
+  const name=snaps[idx]?.name||'';
+  snaps.splice(idx,1);
+  setSnaps(snaps);
+  showToast(`「${name}」を削除しました`);
+  renderSnapList();
+}
+
+function renderSnapList(){
+  const snaps=getSnaps();
+  const el=document.getElementById('snapList');
+  if(!snaps.length){
+    el.innerHTML=`<div class="snap-empty">保存されたスナップショットはありません</div>`;
+    return;
+  }
+  el.innerHTML=snaps.map((s,i)=>`
+    <div class="snap-item">
+      <div class="snap-item-top">
+        <div class="snap-name">${escH(s.name)}</div>
+      </div>
+      <div class="snap-meta">${escH(s.ts||'')} · ${s.words?.length||0}語 · ${s.expressions?.length||0}表</div>
+      <div class="snap-item-btns">
+        <button class="snap-btn load" onclick="loadSnap(${i})">読込</button>
+        <button class="snap-btn del" onclick="deleteSnap(${i})">削除</button>
+      </div>
+    </div>`).join('');
+}
+
+function exportSnaps(){
+  const snaps=getSnaps();
+  if(!snaps.length){showToast('保存されたスナップショットがありません');return;}
+  const now=new Date();
+  const fname=`emotion_map_snaps_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`;
+  const blob=new Blob([JSON.stringify(snaps,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fname;a.click();
+  showToast(`${snaps.length}件のスナップをエクスポートしました`);
+}
+
+function importSnaps(evt){
+  const file=evt.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data))throw new Error('形式が違います');
+      const existing=getSnaps();
+      // 同名は上書き、新規は先頭に追加
+      let added=0,updated=0;
+      data.forEach(snap=>{
+        if(!snap.name||!snap.words)return;
+        const idx=existing.findIndex(s=>s.name===snap.name);
+        if(idx>=0){existing[idx]=snap;updated++;}
+        else{existing.unshift(snap);added++;}
+      });
+      setSnaps(existing);
+      renderSnapList();
+      showToast(`インポート完了：新規${added}件・更新${updated}件`);
+    }catch(err){showToast('エラー: '+err.message);}
+    evt.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ── 保存 ──
+function getSVG(){return'<svg xmlns="http://www.w3.org/2000/svg"'+document.getElementById('ms').outerHTML.slice(4);}
+function downloadSVG(){
+  const t=(gv('cfgT')||'感情地図').replace(/\s/g,'_');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([getSVG()],{type:'image/svg+xml'}));
+  a.download=t+'_'+view+'.svg';a.click();showToast('保存しました');
+}
+function copySVG(){navigator.clipboard.writeText(getSVG()).then(()=>showToast('SVGをコピーしました'));}
+function showToast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+
+// ── 初期化 ──
+renderChips();render();
+window.addEventListener('resize',()=>{npos={};if(view==='n')calcLayout();render();});
+
+// スクロール中はポップアップを非表示
+let scrollTimer;
+const cwEl=document.getElementById('cw');
+const bodyEl=document.getElementById('wordPanel-body');
+[cwEl,bodyEl].forEach(el=>{
+  if(!el)return;
+  el.addEventListener('scroll',()=>{
+    document.body.classList.add('scrolling');
+    clearTimeout(scrollTimer);
+    scrollTimer=setTimeout(()=>{
+      document.body.classList.remove('scrolling');
+    },150);
+  });
+});
+</script>
+</body>
+</html>
