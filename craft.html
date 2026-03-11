@@ -722,6 +722,14 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
   margin-left: auto; font-size: 9px; color: var(--muted);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
 }
+.fai-log {
+  flex: 1; min-height: 120px; overflow-y: auto;
+  padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 5px;
+  background: var(--paper);
+}
+/* パネル全体をflexにして、ログだけが余白を埋める構造を保証 */
+#floatAiPanel { display: flex; flex-direction: column; }
 .fai-bubble {
   font-size: 11px; line-height: 1.75; padding: 5px 9px;
   border-radius: 2px; white-space: pre-wrap; word-break: break-all;
@@ -785,34 +793,6 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 .fai-bubble-check:checked,
 .fai-bubble-wrap:hover .fai-bubble-check { opacity: 1; }
 .fai-bubble-wrap.selected .fai-bubble { outline: 2px solid var(--accent2); }
-
-/* バブル折りたたみ */
-.fai-bubble-inner {
-  flex: 1; min-width: 0;
-}
-.fai-bubble-toggle {
-  font-size: 9px; padding: 1px 5px; background: none; border: 1px solid var(--border);
-  color: var(--muted); cursor: pointer; border-radius: 2px; white-space: nowrap;
-  margin-bottom: 2px; display: none;
-}
-.fai-bubble-wrap.ai .fai-bubble-toggle { display: inline-block; }
-.fai-bubble-wrap.ai .fai-bubble.collapsed {
-  max-height: 2.8em; overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, black 50%, transparent 100%);
-  mask-image: linear-gradient(180deg, black 50%, transparent 100%);
-  cursor: pointer;
-}
-/* ログ部分のスクロール確保 */
-.fai-log {
-  flex: 1; min-height: 120px; overflow-y: auto !important;
-  padding: 8px 10px;
-  display: flex; flex-direction: column; gap: 5px;
-  background: var(--paper);
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.fai-log::-webkit-scrollbar { width: 4px; }
-.fai-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 /* 付箋保存ダイアログ拡張 */
 .fai-save-dest-row {
@@ -1002,8 +982,8 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 
 <div class="header">
   <div class="header-logo">📓 創作ノート</div>
-  <a href="index.html" target="_blank" class="hdr-link">📖 ことば辞典</a>
-  <a href="emotion-map.html" target="_blank" class="hdr-link">🗺 感情地図</a>
+  <a href="index.html" class="hdr-link">📖 ことば辞典</a>
+  <a href="emotion-map.html" class="hdr-link">🗺 感情地図</a>
   <div class="header-search">
     <span style="opacity:0.4;font-size:11px;">🔍</span>
     <input type="text" id="searchInput" placeholder="検索…" oninput="onHeaderSearch()" />
@@ -1155,12 +1135,11 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
   </div>
   <div class="ai-body">
     <div class="ai-input-wrap">
-      <textarea class="ai-question" id="aiQuestion" placeholder="疑問・悩みを書く…&#10;回答に追質問もできます"
-        onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&event.altKey){event.preventDefault();askAI();}"></textarea>
+      <textarea class="ai-question" id="aiQuestion" placeholder="疑問・悩みを書く…&#10;回答に追質問もできます"></textarea>
       <div class="ai-actions-row">
         <button class="ai-prov-btn active" id="provGemini" onclick="setAiProv('gemini')">Gemini</button>
         <button class="ai-prov-btn" id="provClaude" onclick="setAiProv('claude')">Claude</button>
-        <button class="ai-ask-btn" id="askBtn" onclick="askAI()">送信<br><span style="font-size:8px;opacity:0.7;">Alt+↵</span></button>
+        <button class="ai-ask-btn" id="askBtn" onclick="askAI()">送信 →</button>
       </div>
     </div>
     <div class="ai-answer-wrap">
@@ -2728,6 +2707,116 @@ function clearMemoModal() {
   document.getElementById('memoTitle').focus();
 }
 
+// ── 付箋テンプレート機能 ──────────────────────────
+let memoTemplates = [];
+
+function _loadMemoTemplates() {
+  try {
+    const s = localStorage.getItem('memoTemplates_v1');
+    if (s) memoTemplates = JSON.parse(s);
+  } catch(e) { memoTemplates = []; }
+}
+
+function _saveMemoTemplates() {
+  localStorage.setItem('memoTemplates_v1', JSON.stringify(memoTemplates));
+}
+
+function toggleMemoTmplPanel() {
+  const panel = document.getElementById('memoTmplPanel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    renderMemoTmplList();
+    setTimeout(() => document.getElementById('memoTmplNameInput')?.focus(), 60);
+  }
+}
+
+function renderMemoTmplList() {
+  const list = document.getElementById('memoTmplList');
+  if (!list) return;
+  if (memoTemplates.length === 0) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px 10px;">テンプレートがありません。<br>下の欄から保存できます。</div>';
+    return;
+  }
+  list.innerHTML = memoTemplates.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:2px;cursor:pointer;border:1px solid transparent;transition:background 0.1s;"
+         onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''"
+         onclick="applyMemoTmpl(${i})">
+      <span style="font-size:14px;flex-shrink:0;">${t.emoji || '📋'}</span>
+      <span style="width:14px;height:14px;border-radius:50%;background:${t.color||'#f5e6d0'};border:1px solid rgba(0,0,0,0.12);flex-shrink:0;"></span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(t.name)}</div>
+        <div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml((t.front||t.back||'内容なし').slice(0,40))}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteMemoTmpl(${i})" title="削除"
+        style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0;">×</button>
+    </div>
+  `).join('');
+}
+
+function applyMemoTmpl(i) {
+  const t = memoTemplates[i];
+  if (!t) return;
+  // 各フィールドに反映
+  document.getElementById('memoTitle').value = t.title || '';
+  document.getElementById('memoFront').value = t.front || '';
+  document.getElementById('memoBack').value  = t.back  || '';
+  document.getElementById('memoTags').value  = (t.tags || []).join(' ');
+  // カラー
+  memoSelColor = t.color || '#f5e6d0';
+  const prev = document.getElementById('memoColorPreview');
+  if (prev) prev.style.background = memoSelColor;
+  document.querySelectorAll('#memoColorRow .color-dot').forEach(d =>
+    d.classList.toggle('sel', d.dataset.color === memoSelColor));
+  // 絵文字
+  memoSelEmoji = t.emoji || '';
+  document.getElementById('memoSelEmoji').textContent = memoSelEmoji || '　';
+  document.querySelectorAll('#memoEmojiRow .em-btn').forEach(b =>
+    b.classList.toggle('sel', b.dataset.em === memoSelEmoji));
+  // パネルを閉じてタイトルにフォーカス
+  document.getElementById('memoTmplPanel').style.display = 'none';
+  setTimeout(() => document.getElementById('memoTitle').focus(), 60);
+}
+
+function saveMemoTmpl() {
+  const name = document.getElementById('memoTmplNameInput').value.trim();
+  if (!name) {
+    document.getElementById('memoTmplNameInput').focus();
+    return;
+  }
+  const t = {
+    name,
+    title: document.getElementById('memoTitle').value.trim(),
+    front: document.getElementById('memoFront').value.trim(),
+    back:  document.getElementById('memoBack').value.trim(),
+    tags:  document.getElementById('memoTags').value.trim().split(/\s+/).filter(Boolean),
+    color: memoSelColor || '#f5e6d0',
+    emoji: memoSelEmoji || '',
+  };
+  memoTemplates.push(t);
+  _saveMemoTemplates();
+  document.getElementById('memoTmplNameInput').value = '';
+  renderMemoTmplList();
+  // 保存フィードバック
+  const btn = document.querySelector('#memoTmplPanel button[onclick="saveMemoTmpl()"]');
+  if (btn) { const orig = btn.textContent; btn.textContent = '✓'; setTimeout(() => btn.textContent = orig, 800); }
+}
+
+function deleteMemoTmpl(i) {
+  memoTemplates.splice(i, 1);
+  _saveMemoTemplates();
+  renderMemoTmplList();
+}
+
+// パネル外クリックで閉じる
+document.addEventListener('click', e => {
+  const panel = document.getElementById('memoTmplPanel');
+  const btn   = document.getElementById('memoTmplBtn');
+  if (panel && !panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+});
+
 // 表面本文のみクリア
 function clearMemoFront() {
   document.getElementById('memoFront').value = '';
@@ -3741,7 +3830,7 @@ function handleImport(e) {
 }
 
 // ─── 初期化 ──────────────────────────────────
-load();loadMemos();buildToolbar('A');buildToolbar('B');renderList();renderMemoBoard();
+load();loadMemos();_loadMemoTemplates();buildToolbar('A');buildToolbar('B');renderList();renderMemoBoard();
 
 // インポートinputにイベントリスナーを直接登録
 (function(){
@@ -3876,10 +3965,7 @@ function _faiAppendBubble(role, text) {
   const wrap = document.createElement('div');
   wrap.className = 'fai-bubble-wrap ' + role;
 
-  const inner = document.createElement('div');
-  inner.className = 'fai-bubble-inner';
-
-  // AIバブルのみチェックボックスと開閉ボタンを追加
+  // AIバブルのみチェックボックスを追加
   if (role === 'ai') {
     const chk = document.createElement('input');
     chk.type = 'checkbox';
@@ -3887,23 +3973,12 @@ function _faiAppendBubble(role, text) {
     chk.title = '選択して付箋にまとめる';
     chk.addEventListener('change', () => wrap.classList.toggle('selected', chk.checked));
     wrap.appendChild(chk);
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'fai-bubble-toggle';
-    toggleBtn.textContent = '▼ 折りたたむ';
-    toggleBtn.addEventListener('click', () => {
-      const bubble = inner.querySelector('.fai-bubble');
-      const collapsed = bubble.classList.toggle('collapsed');
-      toggleBtn.textContent = collapsed ? '▶ 展開する' : '▼ 折りたたむ';
-    });
-    inner.appendChild(toggleBtn);
   }
 
   const div = document.createElement('div');
   div.className = 'fai-bubble ' + role;
   div.textContent = text;
-  inner.appendChild(div);
-  wrap.appendChild(inner);
+  wrap.appendChild(div);
   log.appendChild(wrap);
   log.scrollTop = log.scrollHeight;
   return div;
@@ -4584,7 +4659,26 @@ closeModal = function(id) {
   <div class="memo-modal-box">
     <div class="memo-modal-hdr">
       <span class="memo-modal-hdr-title" id="memoModalTitle">💡 アイディアメモを追加</span>
-      <div style="margin-left:auto;display:flex;gap:6px;">
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <div style="position:relative;">
+          <button class="btn-secondary" onclick="toggleMemoTmplPanel()" id="memoTmplBtn" title="テンプレートを使う / 保存する" style="font-size:11px;padding:4px 10px;">📋 テンプレート</button>
+          <!-- テンプレートパネル -->
+          <div id="memoTmplPanel" style="display:none;position:absolute;top:100%;right:0;z-index:200;background:var(--paper);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:240px;max-width:320px;border-radius:2px;margin-top:4px;">
+            <div style="padding:6px 10px;background:var(--paper2);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
+              📋 付箋テンプレート
+              <button onclick="document.getElementById('memoTmplPanel').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);">✕</button>
+            </div>
+            <div id="memoTmplList" style="max-height:240px;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;"></div>
+            <div style="padding:6px 10px;border-top:1px solid var(--border);background:var(--paper2);">
+              <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">現在の内容をテンプレートとして保存</div>
+              <div style="display:flex;gap:4px;">
+                <input type="text" id="memoTmplNameInput" placeholder="テンプレート名…" style="flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);"
+                  onkeydown="if(!event.isComposing&&event.key==='Enter'){event.preventDefault();saveMemoTmpl();}" />
+                <button onclick="saveMemoTmpl()" style="font-size:11px;padding:3px 10px;background:var(--accent);color:#fff;border:none;cursor:pointer;">保存</button>
+              </div>
+            </div>
+          </div>
+        </div>
         <button class="btn-primary" onclick="saveMemo()">保存する</button>
         <button class="btn-secondary" onclick="closeModal('memoModal')">キャンセル</button>
       </div>
