@@ -682,6 +682,7 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 #floatAiPanel {
   position: fixed; z-index: 1150;
   width: 380px; min-width: 260px; max-width: 96vw;
+  height: 500px; min-height: 280px; max-height: calc(100vh - 80px);
   background: var(--paper);
   border: 1px solid var(--border);
   box-shadow: 0 8px 32px rgba(0,0,0,0.22);
@@ -723,13 +724,14 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
 }
 .fai-log {
-  flex: 1; min-height: 120px; overflow-y: auto;
+  flex: 1; min-height: 0; overflow-y: auto;
   padding: 8px 10px;
   display: flex; flex-direction: column; gap: 5px;
   background: var(--paper);
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
 }
-/* パネル全体をflexにして、ログだけが余白を埋める構造を保証 */
-#floatAiPanel { display: flex; flex-direction: column; }
+.fai-log::-webkit-scrollbar { width: 4px; }
+.fai-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .fai-bubble {
   font-size: 11px; line-height: 1.75; padding: 5px 9px;
   border-radius: 2px; white-space: pre-wrap; word-break: break-all;
@@ -752,6 +754,18 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 .fai-ins-btn:hover { border-color: var(--accent2); color: var(--accent2); }
 .fai-ins-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .fai-ins-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+/* 履歴アイテム */
+.fai-hist-item {
+  padding: 5px 8px; border-radius: 2px; cursor: pointer;
+  border: 1px solid transparent; transition: background 0.1s;
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.fai-hist-item:hover { background: var(--hover); border-color: var(--border); }
+.fai-hist-body { flex: 1; min-width: 0; }
+.fai-hist-title { font-size: 11px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
+.fai-hist-meta  { font-size: 9px; color: var(--muted); }
+.fai-hist-del   { font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 1px 3px; flex-shrink: 0; }
+.fai-hist-del:hover { color: var(--accent); }
 .fai-input-area {
   padding: 6px 8px; border-top: 1px solid var(--border);
   background: var(--paper2); display: flex; gap: 5px; align-items: flex-end;
@@ -2757,33 +2771,26 @@ function renderMemoTmplList() {
 function applyMemoTmpl(i) {
   const t = memoTemplates[i];
   if (!t) return;
-  // 各フィールドに反映
   document.getElementById('memoTitle').value = t.title || '';
   document.getElementById('memoFront').value = t.front || '';
   document.getElementById('memoBack').value  = t.back  || '';
   document.getElementById('memoTags').value  = (t.tags || []).join(' ');
-  // カラー
   memoSelColor = t.color || '#f5e6d0';
   const prev = document.getElementById('memoColorPreview');
   if (prev) prev.style.background = memoSelColor;
   document.querySelectorAll('#memoColorRow .color-dot').forEach(d =>
     d.classList.toggle('sel', d.dataset.color === memoSelColor));
-  // 絵文字
   memoSelEmoji = t.emoji || '';
   document.getElementById('memoSelEmoji').textContent = memoSelEmoji || '　';
   document.querySelectorAll('#memoEmojiRow .em-btn').forEach(b =>
     b.classList.toggle('sel', b.dataset.em === memoSelEmoji));
-  // パネルを閉じてタイトルにフォーカス
   document.getElementById('memoTmplPanel').style.display = 'none';
   setTimeout(() => document.getElementById('memoTitle').focus(), 60);
 }
 
 function saveMemoTmpl() {
   const name = document.getElementById('memoTmplNameInput').value.trim();
-  if (!name) {
-    document.getElementById('memoTmplNameInput').focus();
-    return;
-  }
+  if (!name) { document.getElementById('memoTmplNameInput').focus(); return; }
   const t = {
     name,
     title: document.getElementById('memoTitle').value.trim(),
@@ -2797,7 +2804,6 @@ function saveMemoTmpl() {
   _saveMemoTemplates();
   document.getElementById('memoTmplNameInput').value = '';
   renderMemoTmplList();
-  // 保存フィードバック
   const btn = document.querySelector('#memoTmplPanel button[onclick="saveMemoTmpl()"]');
   if (btn) { const orig = btn.textContent; btn.textContent = '✓'; setTimeout(() => btn.textContent = orig, 800); }
 }
@@ -2808,11 +2814,10 @@ function deleteMemoTmpl(i) {
   renderMemoTmplList();
 }
 
-// パネル外クリックで閉じる
 document.addEventListener('click', e => {
   const panel = document.getElementById('memoTmplPanel');
   const btn   = document.getElementById('memoTmplBtn');
-  if (panel && !panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+  if (panel && panel.style.display !== 'none' && !panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
     panel.style.display = 'none';
   }
 });
@@ -3830,7 +3835,7 @@ function handleImport(e) {
 }
 
 // ─── 初期化 ──────────────────────────────────
-load();loadMemos();_loadMemoTemplates();buildToolbar('A');buildToolbar('B');renderList();renderMemoBoard();
+load();loadMemos();_loadMemoTemplates();_faiLoadHistories();buildToolbar('A');buildToolbar('B');renderList();renderMemoBoard();
 
 // インポートinputにイベントリスナーを直接登録
 (function(){
@@ -4146,7 +4151,93 @@ function faiCopyAnswer() {
   if (bubbles.length) navigator.clipboard?.writeText(bubbles[bubbles.length - 1].textContent);
 }
 
+// ── FAI 会話履歴機能 ──────────────────────────────
+let _faiSavedHistories = []; // [{id, date, title, history:[]}]
+
+function _faiLoadHistories() {
+  try {
+    const s = localStorage.getItem('faiHistories_v1');
+    if (s) _faiSavedHistories = JSON.parse(s);
+  } catch(e) { _faiSavedHistories = []; }
+}
+function _faiSaveHistories() {
+  // 最大30件まで保持
+  if (_faiSavedHistories.length > 30) _faiSavedHistories = _faiSavedHistories.slice(0, 30);
+  localStorage.setItem('faiHistories_v1', JSON.stringify(_faiSavedHistories));
+}
+
+// 現在の会話を履歴に手動保存
+function faiSaveToHistory() {
+  if (!faiHistory.length) return;
+  const firstQ = faiHistory.find(m => m.role === 'user')?.content || '会話';
+  const title = firstQ.slice(0, 40);
+  const now = new Date().toLocaleString('ja-JP', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  _faiSavedHistories.unshift({ id: Date.now(), date: now, title, history: [...faiHistory] });
+  _faiSaveHistories();
+  // フィードバック
+  const btn = document.querySelector('.fai-ins-btn[onclick="faiSaveToHistory()"]');
+  if (btn) { const o = btn.textContent; btn.textContent = '✓ 保存済'; setTimeout(() => btn.textContent = o, 1200); }
+}
+
+// 履歴パネルを開く
+function faiToggleHistory() {
+  const panel = document.getElementById('faiHistoryPanel');
+  const isOpen = panel.style.display === 'flex';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  if (!isOpen) faiRenderHistory();
+}
+function faiCloseHistory() {
+  document.getElementById('faiHistoryPanel').style.display = 'none';
+}
+
+function faiRenderHistory() {
+  _faiLoadHistories();
+  const list = document.getElementById('faiHistoryList');
+  if (!list) return;
+  if (_faiSavedHistories.length === 0) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:8px 10px;">保存された履歴はありません。<br>会話後に「📚 履歴に保存」で保存できます。</div>';
+    return;
+  }
+  list.innerHTML = _faiSavedHistories.map((h, i) => `
+    <div class="fai-hist-item" onclick="faiLoadHistory(${i})">
+      <div class="fai-hist-body">
+        <div class="fai-hist-title">${escHtml(h.title)}</div>
+        <div class="fai-hist-meta">${h.date} · ${h.history.length}件</div>
+      </div>
+      <button class="fai-hist-del" onclick="event.stopPropagation();faiDeleteHistory(${i})" title="削除">×</button>
+    </div>
+  `).join('');
+}
+
+// 履歴を読み込んで現在のチャットに復元
+function faiLoadHistory(i) {
+  const h = _faiSavedHistories[i];
+  if (!h) return;
+  if (faiHistory.length > 0 && !confirm('現在の会話をクリアして履歴を読み込みますか？')) return;
+  faiHistory = [...h.history];
+  // ログを再描画
+  const log = document.getElementById('faiLog');
+  log.innerHTML = '';
+  faiHistory.forEach(m => _faiAppendBubble(m.role === 'assistant' ? 'ai' : m.role, m.content));
+  document.getElementById('faiInsertRow').classList.add('show');
+  faiCloseHistory();
+  log.scrollTop = log.scrollHeight;
+}
+
+function faiDeleteHistory(i) {
+  _faiSavedHistories.splice(i, 1);
+  _faiSaveHistories();
+  faiRenderHistory();
+}
+
 function faiResetChat() {
+  // リセット前に自動で履歴へ保存（会話があれば）
+  if (faiHistory.length > 0) {
+    const firstQ = faiHistory.find(m => m.role === 'user')?.content || '会話';
+    const now = new Date().toLocaleString('ja-JP', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    _faiSavedHistories.unshift({ id: Date.now(), date: now, title: firstQ.slice(0, 40), history: [...faiHistory] });
+    _faiSaveHistories();
+  }
   faiHistory = [];
   const log = document.getElementById('faiLog');
   log.innerHTML = '<span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>';
@@ -4661,20 +4752,28 @@ closeModal = function(id) {
       <span class="memo-modal-hdr-title" id="memoModalTitle">💡 アイディアメモを追加</span>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
         <div style="position:relative;">
-          <button class="btn-secondary" onclick="toggleMemoTmplPanel()" id="memoTmplBtn" title="テンプレートを使う / 保存する" style="font-size:11px;padding:4px 10px;">📋 テンプレート</button>
-          <!-- テンプレートパネル -->
-          <div id="memoTmplPanel" style="display:none;position:absolute;top:100%;right:0;z-index:200;background:var(--paper);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:240px;max-width:320px;border-radius:2px;margin-top:4px;">
-            <div style="padding:6px 10px;background:var(--paper2);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
+          <button class="btn-secondary" onclick="toggleMemoTmplPanel()" id="memoTmplBtn"
+            style="font-size:11px;padding:4px 10px;">📋 テンプレート</button>
+          <div id="memoTmplPanel" style="display:none;position:absolute;top:100%;right:0;z-index:200;
+            background:var(--paper);border:1px solid var(--border);
+            box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:240px;max-width:320px;
+            border-radius:2px;margin-top:4px;">
+            <div style="padding:6px 10px;background:var(--paper2);border-bottom:1px solid var(--border);
+              font-size:10px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
               📋 付箋テンプレート
-              <button onclick="document.getElementById('memoTmplPanel').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);">✕</button>
+              <button onclick="document.getElementById('memoTmplPanel').style.display='none'"
+                style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);">✕</button>
             </div>
-            <div id="memoTmplList" style="max-height:240px;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;"></div>
+            <div id="memoTmplList" style="max-height:240px;overflow-y:auto;padding:4px 6px;
+              display:flex;flex-direction:column;gap:3px;"></div>
             <div style="padding:6px 10px;border-top:1px solid var(--border);background:var(--paper2);">
               <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">現在の内容をテンプレートとして保存</div>
               <div style="display:flex;gap:4px;">
-                <input type="text" id="memoTmplNameInput" placeholder="テンプレート名…" style="flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);"
+                <input type="text" id="memoTmplNameInput" placeholder="テンプレート名…"
+                  style="flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);"
                   onkeydown="if(!event.isComposing&&event.key==='Enter'){event.preventDefault();saveMemoTmpl();}" />
-                <button onclick="saveMemoTmpl()" style="font-size:11px;padding:3px 10px;background:var(--accent);color:#fff;border:none;cursor:pointer;">保存</button>
+                <button onclick="saveMemoTmpl()"
+                  style="font-size:11px;padding:3px 10px;background:var(--accent);color:#fff;border:none;cursor:pointer;">保存</button>
               </div>
             </div>
           </div>
@@ -4876,8 +4975,18 @@ closeModal = function(id) {
     <button class="fai-ins-btn primary" onclick="faiInsertToEditor()">📋 エディタに挿入</button>
     <button class="fai-ins-btn" onclick="faiSaveAsMemoDialog()">💡 付箋に保存</button>
     <button class="fai-ins-btn" onclick="faiCopyAnswer()">コピー</button>
+    <button class="fai-ins-btn" onclick="faiSaveToHistory()">📚 履歴に保存</button>
+    <button class="fai-ins-btn" onclick="faiToggleHistory()" title="過去の会話を呼び出す">📂 履歴</button>
     <button class="fai-ins-btn" onclick="faiResetChat()">🔄 リセット</button>
     <button class="fai-ins-btn" onclick="faiUnselectAllBubbles()" title="バブル選択を全解除">☐ 全解除</button>
+  </div>
+  <!-- 履歴パネル -->
+  <div id="faiHistoryPanel" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:var(--paper);border:1px solid var(--border);border-bottom:none;box-shadow:0 -4px 16px rgba(0,0,0,0.12);z-index:10;max-height:260px;display:none;flex-direction:column;">
+    <div style="padding:5px 10px;background:var(--ink);color:var(--paper);font-size:10px;letter-spacing:0.1em;display:flex;align-items:center;flex-shrink:0;">
+      📚 会話履歴
+      <button onclick="faiCloseHistory()" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:13px;padding:0 2px;">×</button>
+    </div>
+    <div id="faiHistoryList" style="flex:1;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin;"></div>
   </div>
   <!-- テンプレートパネル（質問入力の上に開く） -->
   <div style="position:relative;">
