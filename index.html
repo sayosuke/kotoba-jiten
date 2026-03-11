@@ -464,8 +464,8 @@
   <div style="display:flex;">
     <button class="tab-btn active" onclick="switchTab('dict-tab', this)">ことば事典</button>
     <button class="tab-btn" onclick="switchTab('note-tab', this)">書き出し・締め方ノート</button>
-    <a href="craft.html" class="tab-btn" style="text-decoration:none;">📓 創作ノート</a>
-    <a href="emotion-map.html" class="tab-btn" style="text-decoration:none;">🗺️ 感情地図</a>
+    <a href="craft.html" target="_blank" class="tab-btn" style="text-decoration:none;">📓 創作ノート</a>
+    <a href="emotion-map.html" target="_blank" class="tab-btn" style="text-decoration:none;">🗺️ 感情地図</a>
   </div>
   <div style="position:relative;padding-right:12px;">
     <button class="btn btn-secondary" onclick="toggleLinkPanel()" style="font-size:11px;padding:4px 12px;white-space:nowrap;">🔗 リンク集</button>
@@ -1279,7 +1279,7 @@ function renderTable() {
     if (groupFilter && w.searchGroup !== groupFilter) return false;
     if (atmosFilter && !(w.atmos||'').split(',').map(a=>a.trim()).includes(atmosFilter)) return false;
     if (search) {
-      const hay = [w.word,w.reading,w.example,w.note,w.memo,w.scene,w.famous_phrase,w.category].join(' ').toLowerCase();
+      const hay = [w.word,w.reading,w.example,w.note,w.memo,w.scene,w.famous_phrase,w.category,w.searchGroup].join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
@@ -2269,5 +2269,337 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- トップへ戻る（ノート） -->
 <button id="noteScrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="トップへ戻る" style="position:fixed;bottom:70px;right:24px;z-index:500;background:var(--paper);color:var(--muted);border:1px solid var(--border);border-radius:50%;width:38px;height:38px;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.12);align-items:center;justify-content:center;line-height:1;">↑</button>
 
-</body>
+<!-- ── フローティングAI（共通）── -->
+<style>
+#floatAiBtn {
+  position: fixed; bottom: 118px; right: 20px; z-index: 1100;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--ink); color: var(--paper);
+  border: none; font-size: 18px; cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+#floatAiBtn:hover { background: var(--accent2); }
+#floatAiBtn.active { background: var(--accent2); }
+#floatAiPanel {
+  position: fixed; z-index: 1150;
+  width: 380px; min-width: 260px; max-width: 96vw;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  border-radius: 3px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#floatAiPanel.hidden { display: none; }
+.fai-header {
+  padding: 6px 10px; background: var(--ink); color: var(--paper);
+  display: flex; align-items: center; gap: 6px;
+  cursor: grab; user-select: none; flex-shrink: 0;
+}
+.fai-header:active { cursor: grabbing; }
+.fai-title { font-size: 11px; letter-spacing: 0.1em; flex: 1; }
+.fai-close-btn {
+  background: none; border: none; color: rgba(255,255,255,0.6);
+  cursor: pointer; font-size: 15px; padding: 0 2px; line-height: 1;
+}
+.fai-close-btn:hover { color: #fff; }
+.fai-prov-row {
+  padding: 4px 8px; border-bottom: 1px solid var(--border);
+  display: flex; gap: 4px; align-items: center; background: var(--paper2);
+  flex-shrink: 0;
+}
+.fai-prov-btn {
+  font-size: 9px; padding: 2px 7px;
+  border: 1px solid var(--border); background: var(--paper);
+  color: var(--muted); cursor: pointer;
+}
+.fai-prov-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.fai-log {
+  flex: 1; min-height: 180px; max-height: 320px; overflow-y: auto;
+  padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 5px;
+  background: var(--paper);
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.fai-log::-webkit-scrollbar { width: 4px; }
+.fai-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.fai-bubble {
+  font-size: 11px; line-height: 1.75; padding: 5px 9px;
+  border-radius: 2px; white-space: pre-wrap; word-break: break-all;
+  font-family: sans-serif; max-width: 94%;
+}
+.fai-bubble.user { background: #ddd5c0; border: 1px solid var(--border); align-self: flex-end; font-size: 10px; }
+.fai-bubble.ai   { background: #f8f4ee; border: 1px solid var(--border); align-self: flex-start; }
+.fai-bubble.err  { background: #fdf0f0; border: 1px solid #f0d0d0; color: var(--accent); }
+.fai-bubble-wrap { display: flex; align-items: flex-start; gap: 5px; max-width: 100%; }
+.fai-bubble-wrap.user { flex-direction: row-reverse; }
+.fai-bubble-inner { flex: 1; min-width: 0; }
+.fai-bubble-toggle {
+  font-size: 9px; padding: 1px 5px; background: none; border: 1px solid var(--border);
+  color: var(--muted); cursor: pointer; border-radius: 2px; white-space: nowrap;
+  margin-bottom: 2px; display: none;
+}
+.fai-bubble-wrap.ai .fai-bubble-toggle { display: inline-block; }
+.fai-bubble-wrap.ai .fai-bubble.collapsed {
+  max-height: 2.8em; overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, black 50%, transparent 100%);
+  mask-image: linear-gradient(180deg, black 50%, transparent 100%);
+}
+.fai-input-area {
+  padding: 6px 8px; border-top: 1px solid var(--border);
+  background: var(--paper2); display: flex; gap: 5px; align-items: flex-end;
+  flex-shrink: 0;
+}
+.fai-textarea {
+  flex: 1; resize: none; min-height: 36px; max-height: 100px;
+  border: 1px solid var(--border); background: var(--paper);
+  padding: 5px 8px; font-family: serif; font-size: 12px;
+  line-height: 1.7; color: var(--ink); outline: none;
+  overflow-y: auto;
+}
+.fai-textarea::placeholder { color: #c8bfb0; }
+.fai-send-btn {
+  background: var(--accent2); color: #fff; border: none;
+  padding: 6px 12px; font-size: 11px; cursor: pointer;
+  align-self: stretch; white-space: nowrap;
+}
+.fai-send-btn:hover { background: var(--accent); }
+.fai-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fai-ins-row {
+  display: none; gap: 3px; padding: 3px 8px;
+  border-top: 1px solid var(--border); background: var(--paper2);
+  flex-wrap: wrap; flex-shrink: 0;
+}
+.fai-ins-row.show { display: flex; }
+.fai-ins-btn-sm {
+  font-size: 9px; padding: 2px 8px;
+  border: 1px solid var(--border); background: var(--paper);
+  color: var(--muted); cursor: pointer; white-space: nowrap;
+}
+.fai-ins-btn-sm:hover { border-color: var(--accent2); color: var(--accent2); }
+.fai-resize-handle {
+  position: absolute; bottom: 0; right: 0;
+  width: 18px; height: 18px; cursor: se-resize;
+  background: linear-gradient(135deg, transparent 40%, var(--border) 40%, var(--border) 60%, transparent 60%),
+              linear-gradient(135deg, transparent 60%, var(--border) 60%, var(--border) 80%, transparent 80%);
+  opacity: 0.5; z-index: 10;
+}
+.fai-resize-handle:hover { opacity: 1; }
+.ai-spinner { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--border); border-top-color: var(--accent2); border-radius: 50%; animation: fai-spin 0.6s linear infinite; }
+@keyframes fai-spin { to { transform: rotate(360deg); } }
+</style>
+
+<button id="floatAiBtn" onclick="toggleFloatAi()" title="AIに質問">🤖</button>
+<div id="floatAiPanel" class="hidden">
+  <div class="fai-header" id="faiHeader">
+    <span class="fai-title">🤖 AI アシスタント</span>
+    <button class="fai-close-btn" onclick="toggleFloatAi()">×</button>
+  </div>
+  <div class="fai-prov-row">
+    <button class="fai-prov-btn active" id="faiProvGemini" onclick="setFaiProv('gemini')">Gemini</button>
+    <button class="fai-prov-btn" id="faiProvClaude" onclick="setFaiProv('claude')">Claude</button>
+  </div>
+  <div class="fai-log" id="faiLog">
+    <span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>
+  </div>
+  <div class="fai-ins-row" id="faiInsertRow">
+    <button class="fai-ins-btn-sm" onclick="faiCopyAnswer()">コピー</button>
+    <button class="fai-ins-btn-sm" onclick="faiResetChat()">🔄 リセット</button>
+  </div>
+  <div class="fai-input-area">
+    <textarea class="fai-textarea" id="faiQuestion" placeholder="何でも質問できます。Alt+Enterで送信。"
+      onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&event.altKey){event.preventDefault();faiAsk();}"></textarea>
+    <button class="fai-send-btn" id="faiSendBtn" onclick="faiAsk()">送信<br><span style="font-size:8px;opacity:0.7;">Alt+↵</span></button>
+  </div>
+  <div class="fai-resize-handle" id="faiResizeHandle"></div>
+</div>
+
+<script>
+(function(){
+  let faiOpen = false;
+  let faiHistory = [];
+  let faiProvider = 'gemini';
+
+  window.toggleFloatAi = function() {
+    faiOpen = !faiOpen;
+    const panel = document.getElementById('floatAiPanel');
+    const btn = document.getElementById('floatAiBtn');
+    panel.classList.toggle('hidden', !faiOpen);
+    btn.classList.toggle('active', faiOpen);
+    if (faiOpen) {
+      if (!panel.dataset.positioned) {
+        panel.dataset.positioned = '1';
+        const pw = 380, ph = 480;
+        panel.style.top = Math.max(10, window.innerHeight - ph - 80) + 'px';
+        panel.style.left = Math.max(10, window.innerWidth - pw - 24) + 'px';
+        panel.style.right = 'auto'; panel.style.bottom = 'auto';
+      }
+      // プロバイダ同期
+      faiProvider = (typeof geminiKey !== 'undefined' && geminiKey) ? 'gemini' : (typeof apiProvider !== 'undefined' ? (apiProvider === 'anthropic' ? 'claude' : 'gemini') : 'gemini');
+      _faiSyncProv();
+      document.getElementById('faiQuestion').focus();
+      // ドラッグ初期化
+      _initFaiDrag();
+    }
+  };
+
+  window.setFaiProv = function(p) {
+    faiProvider = p;
+    _faiSyncProv();
+  };
+
+  function _faiSyncProv() {
+    document.getElementById('faiProvGemini')?.classList.toggle('active', faiProvider === 'gemini');
+    document.getElementById('faiProvClaude')?.classList.toggle('active', faiProvider === 'claude');
+  }
+
+  function _getKey() {
+    if (faiProvider === 'gemini') return (typeof geminiKey !== 'undefined') ? geminiKey : '';
+    return (typeof claudeKey !== 'undefined') ? claudeKey : '';
+  }
+
+  function _appendBubble(role, text) {
+    const log = document.getElementById('faiLog');
+    const ph = log.querySelector('span');
+    if (ph) ph.remove();
+
+    const wrap = document.createElement('div');
+    wrap.className = 'fai-bubble-wrap ' + role;
+    const inner = document.createElement('div');
+    inner.className = 'fai-bubble-inner';
+
+    if (role === 'ai') {
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'fai-bubble-toggle';
+      toggleBtn.textContent = '▼ 折りたたむ';
+      toggleBtn.addEventListener('click', () => {
+        const bubble = inner.querySelector('.fai-bubble');
+        const collapsed = bubble.classList.toggle('collapsed');
+        toggleBtn.textContent = collapsed ? '▶ 展開する' : '▼ 折りたたむ';
+      });
+      inner.appendChild(toggleBtn);
+    }
+
+    const div = document.createElement('div');
+    div.className = 'fai-bubble ' + role;
+    div.textContent = text;
+    inner.appendChild(div);
+    wrap.appendChild(inner);
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+
+  function _showSpinner() {
+    const log = document.getElementById('faiLog');
+    const div = document.createElement('div');
+    div.className = 'fai-bubble ai'; div.id = 'faiSpinner';
+    div.innerHTML = '<span class="ai-spinner"></span> 生成中…';
+    log.appendChild(div); log.scrollTop = log.scrollHeight;
+  }
+  function _removeSpinner() { document.getElementById('faiSpinner')?.remove(); }
+
+  window.faiAsk = async function() {
+    const q = document.getElementById('faiQuestion').value.trim();
+    if (!q) return;
+    const key = _getKey();
+    if (!key) {
+      alert('APIキーを設定してください（ページ上部の「🔑 API設定」から）');
+      return;
+    }
+    const btn = document.getElementById('faiSendBtn');
+    btn.disabled = true;
+    _appendBubble('user', q);
+    faiHistory.push({ role: 'user', content: q });
+    document.getElementById('faiQuestion').value = '';
+    _showSpinner();
+
+    const sys = '創作・語彙アドバイザー。回答は日本語で。前置き不要、結論から答える。';
+    try {
+      let ans = '';
+      if (faiProvider === 'gemini') {
+        const contents = faiHistory.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] }));
+        const r = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: sys }] }, generationConfig: { maxOutputTokens: 2048, temperature: 0.7 } }) }
+        );
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error?.message || 'Geminiエラー');
+        ans = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      } else {
+        const messages = faiHistory.map(m => ({ role: m.role, content: m.content }));
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': key,
+            'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2048, system: sys, messages })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error?.message || 'Claudeエラー');
+        ans = d.content?.[0]?.text || '';
+      }
+      _removeSpinner();
+      _appendBubble('ai', ans);
+      faiHistory.push({ role: 'assistant', content: ans });
+      document.getElementById('faiInsertRow').classList.add('show');
+    } catch(e) {
+      _removeSpinner();
+      _appendBubble('err', 'エラー: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      document.getElementById('faiQuestion').focus();
+    }
+  };
+
+  window.faiCopyAnswer = function() {
+    const bubbles = document.querySelectorAll('#faiLog .fai-bubble.ai');
+    if (bubbles.length) navigator.clipboard?.writeText(bubbles[bubbles.length - 1].textContent);
+  };
+
+  window.faiResetChat = function() {
+    faiHistory = [];
+    const log = document.getElementById('faiLog');
+    log.innerHTML = '<span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>';
+    document.getElementById('faiInsertRow').classList.remove('show');
+  };
+
+  let _faiDragInit = false;
+  function _initFaiDrag() {
+    if (_faiDragInit) return;
+    _faiDragInit = true;
+    const panel = document.getElementById('floatAiPanel');
+    const header = document.getElementById('faiHeader');
+    let ox=0, oy=0, startX=0, startY=0, dragging=false;
+    header.addEventListener('mousedown', e => {
+      dragging = true;
+      startX = e.clientX; startY = e.clientY;
+      ox = panel.offsetLeft; oy = panel.offsetTop;
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      panel.style.left = (ox + e.clientX - startX) + 'px';
+      panel.style.top  = (oy + e.clientY - startY) + 'px';
+    });
+    document.addEventListener('mouseup', () => { dragging = false; });
+
+    // リサイズ
+    const rh = document.getElementById('faiResizeHandle');
+    let resizing=false, rox=0, roy=0, rw=0, rh2=0;
+    rh.addEventListener('mousedown', e => {
+      resizing=true; rox=e.clientX; roy=e.clientY;
+      rw=panel.offsetWidth; rh2=panel.offsetHeight; e.preventDefault();
+    });
+    document.addEventListener('mousemove', e => {
+      if (!resizing) return;
+      panel.style.width  = Math.max(260, rw + e.clientX - rox) + 'px';
+      panel.style.height = Math.max(300, rh2 + e.clientY - roy) + 'px';
+    });
+    document.addEventListener('mouseup', () => { resizing=false; });
+  }
+})();
+</script>
 </html>
