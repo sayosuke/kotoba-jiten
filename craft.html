@@ -1044,7 +1044,7 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
           <option value="">ノートを選択…</option>
         </select>
       </div>
-      <div class="editor-wrap" id="editorWrapA" style="display:none;">
+      <div class="editor-wrap" id="editorWrapA" style="display:flex;">
         <div class="editor-meta-bar" style="padding:2px 8px 2px;">
           <div class="pane-breadcrumb" id="breadcrumbA" style="font-size:9px;padding:1px 0;min-height:14px;"></div>
           <div id="metaControlsA" style="display:flex;align-items:center;gap:5px;">
@@ -1071,7 +1071,7 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
         <textarea class="editor-body" id="bodyA" placeholder="ここに書く…&#10;&#10;ツールバーから罫線・絵文字・定型文を挿入できます" oninput="markDirty('A');autoSave('A')"></textarea>
         <div class="child-notes-section" id="childSectionA"></div>
       </div>
-      <div class="empty-pane" id="emptyA">
+      <div class="empty-pane" id="emptyA" style="display:none;">
         <div class="icon">📄</div>
         <p>左のリストからノートを選ぶ<br>または ＋ で追加</p>
       </div>
@@ -2753,7 +2753,7 @@ function renderMemoTmplList() {
     return;
   }
   list.innerHTML = memoTemplates.map((t, i) => `
-    <div style="display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:2px;cursor:pointer;border:1px solid transparent;transition:background 0.1s;"
+    <div style="display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:2px;cursor:pointer;"
          onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''"
          onclick="applyMemoTmpl(${i})">
       <span style="font-size:14px;flex-shrink:0;">${t.emoji || '📋'}</span>
@@ -2762,7 +2762,7 @@ function renderMemoTmplList() {
         <div style="font-size:11px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(t.name)}</div>
         <div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml((t.front||t.back||'内容なし').slice(0,40))}</div>
       </div>
-      <button onclick="event.stopPropagation();deleteMemoTmpl(${i})" title="削除"
+      <button onclick="event.stopPropagation();deleteMemoTmpl(${i})"
         style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0;">×</button>
     </div>
   `).join('');
@@ -2817,7 +2817,8 @@ function deleteMemoTmpl(i) {
 document.addEventListener('click', e => {
   const panel = document.getElementById('memoTmplPanel');
   const btn   = document.getElementById('memoTmplBtn');
-  if (panel && panel.style.display !== 'none' && !panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+  if (panel && panel.style.display !== 'none' &&
+      !panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
     panel.style.display = 'none';
   }
 });
@@ -4082,7 +4083,6 @@ function faiInsertToEditor() {
     const focused = ['memoFront','memoBack','memoTitle'].find(id => document.activeElement?.id === id);
     taId = focused || 'memoFront';
   } else {
-    // 左右どちらのエディタにフォーカスがあるか判定
     const ae = document.activeElement;
     if (ae?.id === 'bodyB') taId = 'bodyB';
     else taId = 'bodyA';
@@ -4091,12 +4091,9 @@ function faiInsertToEditor() {
   const ta = document.getElementById(taId);
   if (!ta) return;
 
-  // フォーカスを当てて選択位置を確定
   ta.focus();
-  // execCommandを使うとブラウザのundo履歴に乗る
   const inserted = document.execCommand('insertText', false, ans);
   if (!inserted) {
-    // フォールバック
     const s = ta.selectionStart ?? ta.value.length;
     const e = ta.selectionEnd   ?? ta.value.length;
     ta.value = ta.value.slice(0, s) + ans + ta.value.slice(e);
@@ -4106,10 +4103,49 @@ function faiInsertToEditor() {
     const p = taId === 'bodyA' ? 'A' : 'B';
     markDirty(p);
   }
-
-  // 貼り付け先をピコンと光らせる
   _flashElement(ta);
-  // バブル選択を自動解除
+  faiUnselectAllBubbles();
+}
+
+// AI回答を新規ノートに挿入して開く
+function faiInsertToNewNote() {
+  const checked = [...document.querySelectorAll('#faiLog .fai-bubble-wrap.selected .fai-bubble.ai')];
+  const bubbles = document.querySelectorAll('#faiLog .fai-bubble.ai');
+  if (!bubbles.length) return;
+  const ans = checked.length
+    ? checked.map(b => b.textContent).join('\n\n')
+    : bubbles[bubbles.length - 1].textContent;
+
+  // 最初の行をタイトル候補にする（最大30文字）
+  const firstLine = ans.split('\n')[0].replace(/^[#\s*-]+/, '').trim();
+  const autoTitle = firstLine.slice(0, 30) || 'AIメモ';
+
+  const now = new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'});
+  const n = {
+    id: Date.now(),
+    type: 'その他',
+    title: autoTitle,
+    body: ans,
+    tags: ['AI'],
+    parentId: null,
+    childIds: [],
+    order: -1,
+    date: now
+  };
+  // 既存ノートの order をずらして先頭に
+  notes.forEach(x => { if (!x.parentId) x.order = (x.order ?? 0) + 1; });
+  n.order = 0;
+  notes.push(n);
+  save();
+  renderList();
+  openNote(n.id, 'A');
+
+  // タイトル入力欄にフォーカス（すぐ編集できるように）
+  setTimeout(() => {
+    const titleEl = document.getElementById('titleA');
+    if (titleEl) { titleEl.focus(); titleEl.select(); }
+  }, 80);
+
   faiUnselectAllBubbles();
 }
 
@@ -4752,28 +4788,19 @@ closeModal = function(id) {
       <span class="memo-modal-hdr-title" id="memoModalTitle">💡 アイディアメモを追加</span>
       <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
         <div style="position:relative;">
-          <button class="btn-secondary" onclick="toggleMemoTmplPanel()" id="memoTmplBtn"
-            style="font-size:11px;padding:4px 10px;">📋 テンプレート</button>
-          <div id="memoTmplPanel" style="display:none;position:absolute;top:100%;right:0;z-index:200;
-            background:var(--paper);border:1px solid var(--border);
-            box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:240px;max-width:320px;
-            border-radius:2px;margin-top:4px;">
-            <div style="padding:6px 10px;background:var(--paper2);border-bottom:1px solid var(--border);
-              font-size:10px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
+          <button class="btn-secondary" onclick="toggleMemoTmplPanel()" id="memoTmplBtn" style="font-size:11px;padding:4px 10px;">📋 テンプレート</button>
+          <div id="memoTmplPanel" style="display:none;position:absolute;top:100%;right:0;z-index:200;background:var(--paper);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:240px;max-width:320px;border-radius:2px;margin-top:4px;">
+            <div style="padding:6px 10px;background:var(--paper2);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
               📋 付箋テンプレート
-              <button onclick="document.getElementById('memoTmplPanel').style.display='none'"
-                style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);">✕</button>
+              <button onclick="document.getElementById('memoTmplPanel').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);">✕</button>
             </div>
-            <div id="memoTmplList" style="max-height:240px;overflow-y:auto;padding:4px 6px;
-              display:flex;flex-direction:column;gap:3px;"></div>
+            <div id="memoTmplList" style="max-height:240px;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;"></div>
             <div style="padding:6px 10px;border-top:1px solid var(--border);background:var(--paper2);">
               <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">現在の内容をテンプレートとして保存</div>
               <div style="display:flex;gap:4px;">
-                <input type="text" id="memoTmplNameInput" placeholder="テンプレート名…"
-                  style="flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);"
+                <input type="text" id="memoTmplNameInput" placeholder="テンプレート名…" style="flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);"
                   onkeydown="if(!event.isComposing&&event.key==='Enter'){event.preventDefault();saveMemoTmpl();}" />
-                <button onclick="saveMemoTmpl()"
-                  style="font-size:11px;padding:3px 10px;background:var(--accent);color:#fff;border:none;cursor:pointer;">保存</button>
+                <button onclick="saveMemoTmpl()" style="font-size:11px;padding:3px 10px;background:var(--accent);color:#fff;border:none;cursor:pointer;">保存</button>
               </div>
             </div>
           </div>
@@ -4972,7 +4999,8 @@ closeModal = function(id) {
     <span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>
   </div>
   <div class="fai-insert-row" id="faiInsertRow">
-    <button class="fai-ins-btn primary" onclick="faiInsertToEditor()">📋 エディタに挿入</button>
+    <button class="fai-ins-btn primary" onclick="faiInsertToEditor()" title="現在開いているノートに挿入">📋 挿入</button>
+    <button class="fai-ins-btn primary" onclick="faiInsertToNewNote()" title="新しいノートを作成して挿入">＋ 新規ノートに挿入</button>
     <button class="fai-ins-btn" onclick="faiSaveAsMemoDialog()">💡 付箋に保存</button>
     <button class="fai-ins-btn" onclick="faiCopyAnswer()">コピー</button>
     <button class="fai-ins-btn" onclick="faiSaveToHistory()">📚 履歴に保存</button>
