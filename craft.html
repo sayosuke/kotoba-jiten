@@ -1068,7 +1068,7 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
           </div>
         </div>
         <div class="toolbar" id="toolbarA"></div>
-        <textarea class="editor-body" id="bodyA" placeholder="ここに書く…&#10;&#10;ツールバーから罫線・絵文字・定型文を挿入できます" oninput="markDirty('A');autoSave('A')"></textarea>
+        <textarea class="editor-body" id="bodyA" placeholder="ここに書く…&#10;&#10;ツールバーから罫線・絵文字・定型文を挿入できます" oninput="markDirty('A');autoSave('A')" onfocus="_trackEditorFocus(this)" onmouseup="_trackEditorFocus(this)" onkeyup="_trackEditorFocus(this)"></textarea>
         <div class="child-notes-section" id="childSectionA"></div>
       </div>
       <div class="empty-pane" id="emptyA" style="display:none;">
@@ -1108,7 +1108,7 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
           </div>
         </div>
         <div class="toolbar" id="toolbarB"></div>
-        <textarea class="editor-body" id="bodyB" placeholder="ここに書く…" oninput="markDirty('B');autoSave('B')"></textarea>
+        <textarea class="editor-body" id="bodyB" placeholder="ここに書く…" oninput="markDirty('B');autoSave('B')" onfocus="_trackEditorFocus(this)" onmouseup="_trackEditorFocus(this)" onkeyup="_trackEditorFocus(this)"></textarea>
         <div class="child-notes-section" id="childSectionB"></div>
       </div>
       <div class="empty-pane" id="emptyB">
@@ -1253,6 +1253,9 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 <script>
 // ─── 状態 ───────────────────────────────────
 let notes=[], currentNoteId={A:null,B:null}, dualMode=false;
+// 最後にフォーカスされたエディタtextareaとカーソル位置を記憶
+let _faiLastEditorId = 'bodyA';
+let _faiLastEditorSel = { start: 0, end: 0 };
 let isDirty={A:false,B:false}, autoSaveTimers={A:null,B:null};
 let geminiKey='', claudeKey='', aiProvider='gemini';
 let currentAddType='ルール', addParentId=null, activeTagFilter='';
@@ -1561,6 +1564,9 @@ function openNote(id, pane){
   document.getElementById('editorWrap'+pane).style.display = 'flex';
   document.getElementById('empty'+pane).style.display = 'none';
   isDirty[pane] = false;
+  // 挿入先記憶をこのペインのbodyにリセット
+  _faiLastEditorId  = 'body' + pane;
+  _faiLastEditorSel = { start: 0, end: 0 };
   const btn = document.getElementById('saveBtn'+pane);
   btn.textContent = '保存'; btn.classList.remove('saved');
   si[pane] = 0; ski[pane] = 0;
@@ -4069,6 +4075,13 @@ async function faiAsk() {
 }
 
 // 最後のAI回答をエディタに挿入（Ctrl+Zで元に戻せるexecCommand使用）
+// エディタtextareaのフォーカス・カーソル位置を記憶
+function _trackEditorFocus(el) {
+  if (!el) return;
+  _faiLastEditorId  = el.id;
+  _faiLastEditorSel = { start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 };
+}
+
 function faiInsertToEditor() {
   const checked = [...document.querySelectorAll('#faiLog .fai-bubble-wrap.selected .fai-bubble.ai')];
   const bubbles = document.querySelectorAll('#faiLog .fai-bubble.ai');
@@ -4083,15 +4096,28 @@ function faiInsertToEditor() {
     const focused = ['memoFront','memoBack','memoTitle'].find(id => document.activeElement?.id === id);
     taId = focused || 'memoFront';
   } else {
+    // activeElementがbodyA/Bならそちら優先、そうでなければ最後に記憶したエディタを使う
     const ae = document.activeElement;
-    if (ae?.id === 'bodyB') taId = 'bodyB';
-    else taId = 'bodyA';
+    if (ae?.id === 'bodyA' || ae?.id === 'bodyB') {
+      taId = ae.id;
+      _trackEditorFocus(ae);
+    } else {
+      taId = _faiLastEditorId || 'bodyA';
+    }
   }
 
   const ta = document.getElementById(taId);
   if (!ta) return;
 
+  // 記憶したカーソル位置を復元してから挿入
+  const insertPos = (taId === _faiLastEditorId)
+    ? _faiLastEditorSel.start
+    : ta.value.length;
+
   ta.focus();
+  ta.selectionStart = insertPos;
+  ta.selectionEnd   = (taId === _faiLastEditorId) ? _faiLastEditorSel.end : insertPos;
+
   const inserted = document.execCommand('insertText', false, ans);
   if (!inserted) {
     const s = ta.selectionStart ?? ta.value.length;
