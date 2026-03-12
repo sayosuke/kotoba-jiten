@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>プロット</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0a04; --paper: #f5f0e8; --paper2: #ede7d9; --paper3: #e5dece;
+  --accent: #7a2008; --accent2: #c4763a; --muted: #5a4a3a;
+  --border: #d4c9b0; --hover: #e8e2d4; --active-bg: #ddd5c0;
+  --header-h: 48px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var(--ink); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── ヘッダー ── */
+.header { height: var(--header-h); background: var(--ink); color: var(--paper); display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0; }
+.header-logo { font-size: 13px; letter-spacing: 0.2em; white-space: nowrap; }
+.hdr-link { color: rgba(255,255,255,0.85); font-size: 11px; text-decoration: none; letter-spacing: 0.05em; padding: 4px 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); display: flex; align-items: center; gap: 4px; white-space: nowrap; transition: all 0.15s; }
+.hdr-link:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.45); color: #fff; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.hdr-btn { font-size: 10px; padding: 3px 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); cursor: pointer; transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; }
+.hdr-btn:hover { background: rgba(255,255,255,0.22); color: #fff; }
+.hdr-btn.accent { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+
+/* ── レイアウト ── */
+.app-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ── サイドバー（プロット一覧） ── */
+.sidebar { width: 240px; background: var(--paper2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+.sidebar-hdr { padding: 0 10px; border-bottom: 1px solid var(--border); display: flex; gap: 6px; align-items: center; height: 42px; flex-shrink: 0; }
+.sidebar-hdr-title { font-size: 11px; letter-spacing: 0.15em; color: var(--muted); flex: 1; }
+.sidebar-add-btn { background: var(--accent); color: #fff; border: none; width: 26px; height: 26px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.sidebar-add-btn:hover { background: var(--accent2); }
+.plot-list { flex: 1; overflow-y: auto; }
+.plot-item { padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; display: flex; align-items: center; gap: 6px; }
+.plot-item:hover { background: var(--hover); }
+.plot-item.active { background: var(--active-bg); border-left: 3px solid var(--accent); padding-left: 9px; }
+.plot-item-body { flex: 1; min-width: 0; }
+.plot-item-title { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plot-item-meta { font-size: 9px; color: var(--muted); margin-top: 2px; }
+.plot-item-del { opacity: 0; font-size: 10px; color: var(--muted); cursor: pointer; padding: 2px 4px; flex-shrink: 0; }
+.plot-item:hover .plot-item-del { opacity: 0.5; }
+.plot-item-del:hover { color: var(--accent); opacity: 1 !important; }
+
+/* ── メインエリア ── */
+.main-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* ── プロットツールバー ── */
+.plot-toolbar { height: 44px; background: var(--paper2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; gap: 8px; flex-shrink: 0; }
+.plot-title-input { font-size: 14px; font-family: 'Noto Serif JP', serif; background: none; border: none; outline: none; color: var(--ink); flex: 1; min-width: 0; }
+.plot-title-input::placeholder { color: var(--muted); opacity: 0.5; }
+.tool-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.tb-btn { font-size: 10px; padding: 3px 10px; border: 1px solid var(--border); background: var(--paper); color: var(--muted); cursor: pointer; white-space: nowrap; font-family: 'Noto Sans JP', sans-serif; transition: all 0.12s; }
+.tb-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.tb-btn.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+.tb-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tb-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* ── モードバー（起承転結タブ） ── */
+.mode-bar { border-bottom: 1px solid var(--border); background: var(--paper); display: flex; align-items: stretch; padding: 0 14px; gap: 0; flex-shrink: 0; overflow-x: auto; }
+.mode-bar::-webkit-scrollbar { height: 0; }
+.phase-tab { font-size: 11px; padding: 8px 16px; border: none; background: none; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; letter-spacing: 0.08em; white-space: nowrap; font-family: 'Noto Serif JP', serif; margin-bottom: -1px; transition: all 0.15s; }
+.phase-tab:hover { color: var(--accent2); }
+.phase-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.phase-tab-add { font-size: 11px; padding: 8px 10px; border: none; background: none; color: var(--muted); cursor: pointer; letter-spacing: 0; }
+.phase-tab-add:hover { color: var(--accent2); }
+.mode-bar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.mode-select { font-size: 10px; padding: 3px 8px; border: 1px solid var(--border); background: var(--paper2); color: var(--ink); font-family: 'Noto Sans JP', sans-serif; cursor: pointer; }
+
+/* ── カードボード ── */
+.board-wrap { flex: 1; overflow: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+.board-phase { display: flex; flex-direction: column; gap: 0; }
+.phase-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
+.phase-label { font-size: 13px; letter-spacing: 0.2em; color: var(--muted); font-family: 'Noto Serif JP', serif; }
+.phase-label-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.phase-count { font-size: 9px; color: var(--muted); padding: 1px 6px; background: var(--paper2); border: 1px solid var(--border); }
+.phase-add-btn { font-size: 10px; padding: 2px 8px; border: 1px dashed var(--border); background: none; color: var(--muted); cursor: pointer; transition: all 0.12s; margin-left: auto; }
+.phase-add-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+/* ── カード列 ── */
+.cards-row { display: flex; flex-wrap: wrap; gap: 12px; min-height: 100px; padding: 4px 2px; }
+.cards-row.drag-over { background: rgba(196,118,58,0.06); outline: 2px dashed var(--accent2); border-radius: 2px; }
+
+/* ── シーンカード ── */
+.scene-card {
+  width: 200px; min-height: 130px;
+  background: var(--paper); border: 1px solid var(--border);
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.07);
+  display: flex; flex-direction: column;
+  cursor: pointer; transition: box-shadow 0.15s, transform 0.1s;
+  position: relative; border-radius: 2px;
+  flex-shrink: 0;
+}
+.scene-card:hover { box-shadow: 3px 5px 14px rgba(0,0,0,0.13); transform: translateY(-1px); }
+.scene-card.dragging { opacity: 0.45; transform: scale(0.97); }
+.scene-card.drag-over { outline: 2px solid var(--accent2); }
+.card-color-bar { height: 4px; border-radius: 2px 2px 0 0; flex-shrink: 0; }
+.card-header { padding: 8px 10px 4px; display: flex; align-items: flex-start; gap: 5px; }
+.card-num { font-size: 9px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+.card-title { font-size: 12px; line-height: 1.5; flex: 1; min-width: 0; word-break: break-all; font-family: 'Noto Serif JP', serif; }
+.card-body { padding: 2px 10px 8px; font-size: 10px; color: var(--muted); line-height: 1.7; flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+.card-footer { padding: 4px 8px 6px; display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--border); }
+.card-tag { font-size: 8px; padding: 1px 5px; background: var(--paper2); border: 1px solid var(--border); color: var(--muted); }
+.card-chars { font-size: 8px; color: var(--muted); margin-left: auto; }
+.card-drag-handle { position: absolute; top: 6px; right: 6px; color: var(--border); font-size: 11px; cursor: grab; opacity: 0; transition: opacity 0.1s; }
+.scene-card:hover .card-drag-handle { opacity: 0.7; }
+
+/* ── 空ボード ── */
+.empty-board { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; color: var(--muted); }
+.empty-board .icon { font-size: 40px; opacity: 0.25; }
+.empty-board p { font-size: 12px; opacity: 0.5; text-align: center; line-height: 2; }
+
+/* ── カード詳細モーダル ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(15,10,4,0.5);
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: var(--paper); border: 1px solid var(--border);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  width: min(720px, 96vw); max-height: 90vh;
+  display: flex; flex-direction: column;
+  border-radius: 2px;
+}
+.modal-hdr {
+  padding: 10px 16px; background: var(--ink); color: var(--paper);
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.modal-hdr-title { font-size: 12px; letter-spacing: 0.12em; flex: 1; }
+.modal-close { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 18px; padding: 0 4px; line-height: 1; }
+.modal-close:hover { color: #fff; }
+.modal-body { flex: 1; overflow-y: auto; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer { padding: 10px 16px; background: var(--paper2); border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.field-label { font-size: 9px; letter-spacing: 0.18em; color: var(--muted); margin-bottom: 4px; }
+.field-input { width: 100%; padding: 7px 10px; border: 1px solid var(--border); background: var(--paper); color: var(--ink); font-family: 'Noto Serif JP', serif; font-size: 13px; outline: none; }
+.field-input:focus { border-color: var(--accent2); }
+.field-textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); background: var(--paper); color: var(--ink); font-family: 'Noto Serif JP', serif; font-size: 12px; line-height: 1.9; resize: vertical; outline: none; min-height: 80px; }
+.field-textarea:focus { border-color: var(--accent2); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.color-chip { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+.color-chip:hover { transform: scale(1.15); }
+.color-chip.sel { border-color: var(--ink); transform: scale(1.1); }
+.btn-primary { padding: 6px 18px; background: var(--accent); color: #fff; border: none; cursor: pointer; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; letter-spacing: 0.08em; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-secondary { padding: 6px 14px; background: var(--paper); color: var(--muted); border: 1px solid var(--border); cursor: pointer; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; }
+.btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+.btn-danger { padding: 6px 14px; background: none; color: #a02010; border: 1px solid #d0a090; cursor: pointer; font-size: 11px; font-family: 'Noto Sans JP', sans-serif; }
+.btn-danger:hover { background: #fdf0ee; }
+
+/* ── プロット作成モーダル ── */
+.new-plot-box { background: var(--paper); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.18); width: min(480px,96vw); border-radius: 2px; }
+.new-plot-hdr { padding: 10px 16px; background: var(--ink); color: var(--paper); font-size: 12px; letter-spacing: 0.12em; display: flex; align-items: center; }
+.new-plot-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tmpl-btn { padding: 10px 12px; border: 1px solid var(--border); background: var(--paper); cursor: pointer; text-align: left; transition: all 0.12s; }
+.tmpl-btn:hover { border-color: var(--accent2); background: var(--hover); }
+.tmpl-btn.sel { border-color: var(--accent); background: rgba(122,32,8,0.06); }
+.tmpl-btn-name { font-size: 12px; color: var(--ink); margin-bottom: 2px; font-family: 'Noto Serif JP', serif; }
+.tmpl-btn-desc { font-size: 9px; color: var(--muted); line-height: 1.5; }
+
+/* ── フェーズ名編集ポップ ── */
+.phase-edit-pop {
+  position: fixed; z-index: 400;
+  background: var(--paper); border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 10px 12px; display: none; flex-direction: column; gap: 6px;
+  min-width: 200px;
+}
+.phase-edit-pop.show { display: flex; }
+
+/* ── トースト ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper); font-size: 11px; letter-spacing: 0.1em;
+  padding: 8px 20px; z-index: 9999; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* ── スクロールバー ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── フローティングAI ── */
+#floatAiBtn {
+  position: fixed; bottom: 24px; right: 24px; z-index: 1100;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--ink); color: var(--paper);
+  border: none; cursor: pointer; font-size: 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+#floatAiBtn:hover, #floatAiBtn.active { background: var(--accent2); }
+#floatAiPanel {
+  position: fixed; z-index: 1150;
+  width: 360px; min-width: 240px; max-width: 96vw;
+  height: 480px; min-height: 260px; max-height: calc(100vh - 80px);
+  background: var(--paper); border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  border-radius: 3px; display: flex; flex-direction: column;
+  overflow: hidden; bottom: 80px; right: 24px;
+}
+#floatAiPanel.hidden { display: none; }
+.fai-header { padding: 6px 10px; background: var(--ink); color: var(--paper); display: flex; align-items: center; gap: 6px; cursor: grab; user-select: none; flex-shrink: 0; }
+.fai-title { font-size: 11px; letter-spacing: 0.1em; flex: 1; }
+.fai-close-btn { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 15px; padding: 0 2px; line-height: 1; }
+.fai-close-btn:hover { color: #fff; }
+.fai-prov-row { padding: 4px 8px; border-bottom: 1px solid var(--border); display: flex; gap: 4px; align-items: center; background: var(--paper2); flex-shrink: 0; }
+.fai-prov-btn { font-size: 9px; padding: 2px 7px; border: 1px solid var(--border); background: var(--paper); color: var(--muted); cursor: pointer; }
+.fai-prov-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.fai-log { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; background: var(--paper); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.fai-log::-webkit-scrollbar { width: 4px; }
+.fai-log::-webkit-scrollbar-thumb { background: var(--border); }
+.fai-bubble { font-size: 11px; line-height: 1.75; padding: 5px 9px; border-radius: 2px; white-space: pre-wrap; word-break: break-all; font-family: sans-serif; max-width: 94%; }
+.fai-bubble.user { background: var(--active-bg); border: 1px solid var(--border); align-self: flex-end; font-size: 10px; }
+.fai-bubble.ai { background: #f8f4ee; border: 1px solid var(--border); align-self: flex-start; }
+.fai-bubble.err { background: #fdf0f0; border: 1px solid #f0d0d0; color: var(--accent); }
+.fai-input-area { padding: 6px 8px; border-top: 1px solid var(--border); background: var(--paper2); display: flex; gap: 5px; align-items: flex-end; flex-shrink: 0; }
+.fai-textarea { flex: 1; resize: none; min-height: 36px; max-height: 120px; border: 1px solid var(--border); background: var(--paper); padding: 5px 8px; font-family: serif; font-size: 12px; line-height: 1.7; color: var(--ink); outline: none; overflow-y: auto; }
+.fai-send-btn { background: var(--accent2); color: #fff; border: none; padding: 6px 12px; font-size: 11px; cursor: pointer; align-self: stretch; white-space: nowrap; }
+.fai-send-btn:hover { background: var(--accent); }
+.fai-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fai-action-row { padding: 4px 8px; border-top: 1px solid var(--border); background: var(--paper2); display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
+.fai-act-btn { font-size: 9px; padding: 2px 8px; border: 1px solid var(--border); background: var(--paper); color: var(--muted); cursor: pointer; }
+.fai-act-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.fai-resize-handle { position: absolute; bottom: 0; right: 0; width: 18px; height: 18px; cursor: se-resize; background: linear-gradient(135deg,transparent 40%,var(--border) 40%,var(--border) 60%,transparent 60%), linear-gradient(135deg,transparent 60%,var(--border) 60%,var(--border) 80%,transparent 80%); opacity: 0.5; z-index: 10; }
+.fai-resize-handle:hover { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="header">
+  <div class="header-logo">📋 プロット</div>
+  <a href="index.html" class="hdr-link" target="_blank">📖 ことば辞典</a>
+  <a href="craft.html" class="hdr-link" target="_blank">📓 創作ノート</a>
+  <a href="emotion-map.html" class="hdr-link" target="_blank">🗺 感情地図</a>
+  <div class="header-actions">
+    <button class="hdr-btn" onclick="exportData()">💾 保存</button>
+    <button class="hdr-btn" onclick="importData()">📂 読込</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="onImportFile(event)">
+  </div>
+</div>
+
+<div class="app-body">
+
+  <!-- サイドバー -->
+  <div class="sidebar">
+    <div class="sidebar-hdr">
+      <span class="sidebar-hdr-title">プロット一覧</span>
+      <button class="sidebar-add-btn" onclick="showNewPlotModal()" title="新しいプロットを追加">＋</button>
+    </div>
+    <div class="plot-list" id="plotList"></div>
+  </div>
+
+  <!-- メイン -->
+  <div class="main-pane" id="mainPane">
+
+    <!-- 空の状態 -->
+    <div class="empty-board" id="emptyBoard">
+      <div class="icon">📋</div>
+      <p>左の「＋」から新しいプロットを作成する<br>または既存のプロットを選択</p>
+    </div>
+
+    <!-- ボードビュー -->
+    <div id="boardView" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden;">
+      <!-- ツールバー -->
+      <div class="plot-toolbar">
+        <input type="text" class="plot-title-input" id="plotTitleInput" placeholder="プロットのタイトル" oninput="onPlotTitleChange()">
+        <div class="tool-sep"></div>
+        <button class="tb-btn" onclick="addScene()">＋ シーン追加</button>
+        <button class="tb-btn" onclick="toggleViewMode()" id="viewModeBtn">📄 リスト表示</button>
+        <button class="tb-btn primary" onclick="saveCurrent()">保存</button>
+      </div>
+
+      <!-- フェーズタブ -->
+      <div class="mode-bar" id="modeBar">
+        <!-- タブはJS生成 -->
+        <div class="mode-bar-right">
+          <button class="tb-btn" onclick="addPhase()" style="font-size:9px;padding:2px 8px;">＋ フェーズ追加</button>
+          <select class="mode-select" id="templateSelect" onchange="applyTemplate(this.value)">
+            <option value="">── テンプレート ──</option>
+            <option value="kishoutenketsu">起承転結</option>
+            <option value="johakyuu">序破急</option>
+            <option value="sanmaku">三幕構成</option>
+            <option value="hero">英雄の旅</option>
+            <option value="custom1">カスタム（空）</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- カードボード / リスト -->
+      <div id="boardContent" style="flex:1;overflow:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── シーン詳細モーダル ── -->
+<div class="modal-overlay" id="sceneModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-hdr-title" id="sceneModalTitle">📝 シーンを編集</span>
+      <button class="modal-close" onclick="closeSceneModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- タイトル -->
+      <div>
+        <div class="field-label">タイトル</div>
+        <input type="text" class="field-input" id="sceneTitle" placeholder="シーンのタイトル">
+      </div>
+      <!-- カラー -->
+      <div>
+        <div class="field-label">カード色</div>
+        <div class="color-row" id="sceneColorRow"></div>
+      </div>
+      <!-- 概要 -->
+      <div>
+        <div class="field-label">概要・あらすじ</div>
+        <textarea class="field-textarea" id="sceneSummary" rows="3" placeholder="このシーンで何が起きるか…"></textarea>
+      </div>
+      <!-- 詳細 -->
+      <div>
+        <div class="field-label">詳細・メモ</div>
+        <textarea class="field-textarea" id="sceneDetail" rows="4" placeholder="伏線、セリフ、描写メモなど…"></textarea>
+      </div>
+      <!-- 登場人物・場所・時間 -->
+      <div class="field-row">
+        <div>
+          <div class="field-label">登場人物</div>
+          <input type="text" class="field-input" id="sceneChars" placeholder="主人公、ヒロイン…">
+        </div>
+        <div>
+          <div class="field-label">場所</div>
+          <input type="text" class="field-input" id="sceneLocation" placeholder="森の中、城壁の上…">
+        </div>
+      </div>
+      <div class="field-row">
+        <div>
+          <div class="field-label">時間・季節</div>
+          <input type="text" class="field-input" id="sceneTime" placeholder="夜明け前、冬…">
+        </div>
+        <div>
+          <div class="field-label">タグ</div>
+          <input type="text" class="field-input" id="sceneTags" placeholder="クライマックス 伏線回収">
+        </div>
+      </div>
+      <!-- 感情・テンション -->
+      <div class="field-row">
+        <div>
+          <div class="field-label">感情・雰囲気</div>
+          <input type="text" class="field-input" id="sceneMood" placeholder="緊迫、哀愁、高揚…">
+        </div>
+        <div>
+          <div class="field-label">テンション (1〜5)</div>
+          <div style="display:flex;gap:4px;margin-top:4px;" id="tensionRow"></div>
+        </div>
+      </div>
+      <!-- フェーズ -->
+      <div>
+        <div class="field-label">フェーズ</div>
+        <select class="field-input" id="scenePhase" style="font-family:'Noto Sans JP',sans-serif;font-size:12px;"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="saveSceneModal()">保存する</button>
+      <button class="btn-secondary" onclick="closeSceneModal()">キャンセル</button>
+      <button class="btn-danger" id="sceneDeleteBtn" onclick="deleteCurrentScene()" style="margin-left:auto;">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 新規プロット作成モーダル ── -->
+<div class="modal-overlay" id="newPlotModal">
+  <div class="new-plot-box">
+    <div class="new-plot-hdr">
+      📋 新しいプロットを作成
+      <button onclick="closeModal('newPlotModal')" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div class="new-plot-body">
+      <div>
+        <div class="field-label">タイトル</div>
+        <input type="text" class="field-input" id="newPlotTitle" placeholder="プロットのタイトル"
+          onkeydown="if(!event.isComposing&&event.key==='Enter')createNewPlot()">
+      </div>
+      <div>
+        <div class="field-label">テンプレートを選ぶ</div>
+        <div class="template-grid" id="templateGrid"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px;">
+        <button class="btn-secondary" onclick="closeModal('newPlotModal')">キャンセル</button>
+        <button class="btn-primary" onclick="createNewPlot()">作成する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- フェーズ名編集ポップ -->
+<div class="phase-edit-pop" id="phaseEditPop">
+  <div style="font-size:9px;letter-spacing:0.15em;color:var(--muted);margin-bottom:2px;">フェーズ名を編集</div>
+  <input type="text" class="field-input" id="phaseEditInput" style="font-size:12px;padding:4px 8px;"
+    onkeydown="if(!event.isComposing&&event.key==='Enter')savePhaseEdit()">
+  <div style="display:flex;gap:6px;margin-top:2px;">
+    <button class="btn-primary" onclick="savePhaseEdit()" style="padding:3px 12px;font-size:10px;">保存</button>
+    <button class="btn-secondary" onclick="document.getElementById('phaseEditPop').classList.remove('show')" style="padding:3px 10px;font-size:10px;">閉</button>
+    <button class="btn-danger" onclick="deleteCurrentPhase()" style="padding:3px 10px;font-size:10px;">削除</button>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast">保存しました</div>
+
+<!-- フローティングAI -->
+<button id="floatAiBtn" onclick="toggleFAI()">🤖</button>
+<div id="floatAiPanel" class="hidden">
+  <div class="fai-header" id="faiHdr">
+    <span class="fai-title">🤖 AI アシスタント</span>
+    <button class="fai-close-btn" onclick="toggleFAI()">×</button>
+  </div>
+  <div class="fai-prov-row">
+    <button class="fai-prov-btn active" id="faiProvG" onclick="setFaiProv('gemini')">Gemini</button>
+    <button class="fai-prov-btn" id="faiProvC" onclick="setFaiProv('claude')">Claude</button>
+    <span style="margin-left:auto;font-size:9px;color:var(--muted);" id="faiKeyStatus">キー未設定</span>
+    <button onclick="promptApiKey()" style="font-size:9px;padding:1px 6px;border:1px solid var(--border);background:var(--paper);color:var(--muted);cursor:pointer;">⚙</button>
+  </div>
+  <div class="fai-log" id="faiLog">
+    <span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>
+  </div>
+  <div class="fai-action-row">
+    <button class="fai-act-btn" onclick="faiCopy()">コピー</button>
+    <button class="fai-act-btn" onclick="faiReset()">🔄 リセット</button>
+  </div>
+  <div class="fai-input-area">
+    <textarea class="fai-textarea" id="faiQ" placeholder="何でも質問できます。Alt+Enterで送信。"
+      onkeydown="if(!event.isComposing&&event.key==='Enter'&&event.altKey){event.preventDefault();faiAsk();}"></textarea>
+    <button class="fai-send-btn" id="faiSendBtn" onclick="faiAsk()">送信<br><span style="font-size:8px;opacity:0.7;">Alt+↵</span></button>
+  </div>
+  <div class="fai-resize-handle" id="faiResize"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// データ構造
+// plots: [{ id, title, phases:[{id,name,color}], scenes:[{id,phaseId,title,summary,detail,chars,location,time,tags,mood,tension,color,order}] }]
+// ══════════════════════════════════════════════
+let plots = [];
+let currentPlotId = null;
+let editingSceneId = null;
+let editingPhaseId = null;
+let viewMode = 'board'; // 'board' | 'list'
+let faiOpen = false;
+let faiProv = 'gemini';
+let faiHistory = [];
+let faiKeys = { gemini: '', claude: '' };
+
+const PHASE_COLORS = ['#c4763a','#7a4a8a','#3a7a4a','#3a5a8a','#8a6a2a','#7a2030','#4a7a7a','#5a5a7a'];
+const CARD_COLORS  = [
+  '#f5e6d0','#fde8e8','#fffde8','#e8f0e4','#e8eaf8','#f3e8f8','#e0f4f8','#fdebd0',
+  '#d4b896','#e8a598','#c5ddb0','#a8c8e8','#c8b0d8','#b8d4c8','#e8c88a',
+  '#3a2010','#2c3e50','#4a5a3a','#6a3050','#1a3a4a'
+];
+
+const TEMPLATES = {
+  kishoutenketsu: {
+    name: '起承転結', desc: '4幕。基本の物語構成',
+    phases: ['起','承','転','結']
+  },
+  johakyuu: {
+    name: '序破急', desc: '3幕。緩急をつけた展開',
+    phases: ['序','破','急']
+  },
+  sanmaku: {
+    name: '三幕構成', desc: '設定・対立・解決の3幕',
+    phases: ['設定','対立・葛藤','解決']
+  },
+  hero: {
+    name: '英雄の旅', desc: '12ステップの旅の構造',
+    phases: ['日常世界','冒険への召喚','試練','最大の試練','報酬と帰還']
+  },
+  custom1: {
+    name: 'カスタム（空）', desc: 'フェーズを自由に設定',
+    phases: ['フェーズ1']
+  }
+};
+
+// ── ユーティリティ ──
+function uid() { return Date.now() + Math.random().toString(36).slice(2,7); }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg='保存しました') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ── 保存・読込 ──
+function save() {
+  localStorage.setItem('plotData_v1', JSON.stringify({ plots, faiKeys }));
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem('plotData_v1') || '{}');
+    if (d.plots) plots = d.plots;
+    if (d.faiKeys) faiKeys = { ...faiKeys, ...d.faiKeys };
+  } catch(e) { plots = []; }
+}
+function exportData() {
+  const json = JSON.stringify({ plots }, null, 2);
+  const a = document.createElement('a');
+  const date = new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'');
+  a.href = URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  a.download = `プロット_${date}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importData() { document.getElementById('importFile').click(); }
+function onImportFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.plots) {
+        if (confirm(`プロット ${d.plots.length} 件を読み込みます。現在のデータに追加しますか？\n（キャンセル → 上書き）`)) {
+          plots = [...plots, ...d.plots];
+        } else {
+          plots = d.plots;
+        }
+        save(); renderPlotList();
+        showToast('読み込みました');
+      }
+    } catch(err) { alert('読み込みに失敗しました'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+// ── サイドバー ──
+function renderPlotList() {
+  const list = document.getElementById('plotList');
+  if (!plots.length) {
+    list.innerHTML = '<div style="padding:16px 12px;font-size:11px;color:var(--muted);text-align:center;line-height:2;">プロットがありません<br>＋ で追加</div>';
+    return;
+  }
+  list.innerHTML = plots.map(p => `
+    <div class="plot-item${p.id===currentPlotId?' active':''}" onclick="openPlot('${p.id}')">
+      <div class="plot-item-body">
+        <div class="plot-item-title">${escHtml(p.title||'（無題）')}</div>
+        <div class="plot-item-meta">${p.scenes?.length||0} シーン · ${p.phases?.map(ph=>ph.name).join('・')||''}</div>
+      </div>
+      <span class="plot-item-del" onclick="event.stopPropagation();deletePlot('${p.id}')">×</span>
+    </div>
+  `).join('');
+}
+
+function deletePlot(id) {
+  if (!confirm('このプロットを削除しますか？')) return;
+  plots = plots.filter(p => p.id !== id);
+  if (currentPlotId === id) { currentPlotId = null; showEmptyBoard(); }
+  save(); renderPlotList();
+}
+
+// ── プロット作成 ──
+let selectedTemplate = 'kishoutenketsu';
+
+function showNewPlotModal() {
+  selectedTemplate = 'kishoutenketsu';
+  const grid = document.getElementById('templateGrid');
+  grid.innerHTML = Object.entries(TEMPLATES).map(([k,v]) => `
+    <button class="tmpl-btn${k===selectedTemplate?' sel':''}" onclick="selectTemplate('${k}',this)">
+      <div class="tmpl-btn-name">${v.name}</div>
+      <div class="tmpl-btn-desc">${v.desc}</div>
+    </button>
+  `).join('');
+  document.getElementById('newPlotTitle').value = '';
+  document.getElementById('newPlotModal').classList.add('show');
+  setTimeout(() => document.getElementById('newPlotTitle').focus(), 60);
+}
+
+function selectTemplate(key, btn) {
+  selectedTemplate = key;
+  document.querySelectorAll('#templateGrid .tmpl-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function createNewPlot() {
+  const title = document.getElementById('newPlotTitle').value.trim() || '新しいプロット';
+  const tmpl = TEMPLATES[selectedTemplate] || TEMPLATES.kishoutenketsu;
+  const phases = tmpl.phases.map((name, i) => ({
+    id: uid(), name, color: PHASE_COLORS[i % PHASE_COLORS.length]
+  }));
+  const plot = { id: uid(), title, phases, scenes: [] };
+  plots.unshift(plot);
+  save(); renderPlotList();
+  closeModal('newPlotModal');
+  openPlot(plot.id);
+}
+
+// ── プロット表示 ──
+function showEmptyBoard() {
+  document.getElementById('emptyBoard').style.display = 'flex';
+  document.getElementById('boardView').style.display = 'none';
+}
+
+function openPlot(id) {
+  currentPlotId = id;
+  const plot = plots.find(p => p.id === id);
+  if (!plot) { showEmptyBoard(); return; }
+  document.getElementById('emptyBoard').style.display = 'none';
+  const bv = document.getElementById('boardView');
+  bv.style.display = 'flex';
+  bv.style.flexDirection = 'column';
+  document.getElementById('plotTitleInput').value = plot.title || '';
+  renderPlotList();
+  renderModeBar();
+  renderBoard();
+}
+
+function onPlotTitleChange() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  plot.title = document.getElementById('plotTitleInput').value;
+  // サイドバーをlite更新
+  document.querySelectorAll('.plot-item').forEach((el,i) => {
+    if (plots[i]?.id === currentPlotId) {
+      el.querySelector('.plot-item-title').textContent = plot.title || '（無題）';
+    }
+  });
+}
+
+function saveCurrent() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  plot.title = document.getElementById('plotTitleInput').value.trim() || '（無題）';
+  save(); renderPlotList(); showToast();
+}
+
+// ── フェーズタブ ──
+let activePhaseId = null;
+
+function renderModeBar() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  const bar = document.getElementById('modeBar');
+  // タブ部分だけ再生成（mode-bar-right は保持）
+  const right = bar.querySelector('.mode-bar-right');
+  bar.innerHTML = '';
+  if (!activePhaseId || !plot.phases.find(ph => ph.id === activePhaseId)) {
+    activePhaseId = null; // null = 全フェーズ表示
+  }
+  // 「全体」タブ
+  const allTab = document.createElement('button');
+  allTab.className = 'phase-tab' + (!activePhaseId ? ' active' : '');
+  allTab.textContent = '全体';
+  allTab.onclick = () => { activePhaseId = null; renderModeBar(); renderBoard(); };
+  bar.appendChild(allTab);
+  // 各フェーズ
+  plot.phases.forEach(ph => {
+    const tab = document.createElement('button');
+    tab.className = 'phase-tab' + (activePhaseId===ph.id ? ' active' : '');
+    tab.style.borderBottomColor = activePhaseId===ph.id ? ph.color : '';
+    tab.style.color = activePhaseId===ph.id ? ph.color : '';
+    tab.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ph.color};margin-right:5px;"></span>${escHtml(ph.name)}`;
+    tab.onclick = () => { activePhaseId = ph.id; renderModeBar(); renderBoard(); };
+    tab.ondblclick = (e) => { e.stopPropagation(); openPhaseEdit(ph.id, tab); };
+    bar.appendChild(tab);
+  });
+  bar.appendChild(right);
+}
+
+function addPhase() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  const ph = { id: uid(), name: 'フェーズ'+(plot.phases.length+1), color: PHASE_COLORS[plot.phases.length % PHASE_COLORS.length] };
+  plot.phases.push(ph);
+  save(); renderModeBar(); renderBoard();
+}
+
+function applyTemplate(val) {
+  if (!val) return;
+  const tmpl = TEMPLATES[val];
+  if (!tmpl) return;
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  if (plot.scenes.length > 0 && !confirm('シーンのフェーズ割り当てがリセットされます。続けますか？')) {
+    document.getElementById('templateSelect').value = '';
+    return;
+  }
+  plot.phases = tmpl.phases.map((name, i) => ({
+    id: uid(), name, color: PHASE_COLORS[i % PHASE_COLORS.length]
+  }));
+  // シーンのphaseIdをリセット
+  plot.scenes.forEach(s => { s.phaseId = plot.phases[0]?.id || null; });
+  activePhaseId = null;
+  save(); renderModeBar(); renderBoard();
+  document.getElementById('templateSelect').value = '';
+}
+
+// フェーズ名編集
+let editingPhaseTabEl = null;
+function openPhaseEdit(phaseId, tabEl) {
+  editingPhaseId = phaseId;
+  editingPhaseTabEl = tabEl;
+  const plot = plots.find(p => p.id === currentPlotId);
+  const ph = plot?.phases.find(x => x.id === phaseId);
+  if (!ph) return;
+  const pop = document.getElementById('phaseEditPop');
+  document.getElementById('phaseEditInput').value = ph.name;
+  const rect = tabEl.getBoundingClientRect();
+  pop.style.top  = (rect.bottom + 4) + 'px';
+  pop.style.left = rect.left + 'px';
+  pop.classList.add('show');
+  setTimeout(() => document.getElementById('phaseEditInput').select(), 60);
+}
+function savePhaseEdit() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  const ph = plot?.phases.find(x => x.id === editingPhaseId);
+  if (ph) {
+    ph.name = document.getElementById('phaseEditInput').value.trim() || ph.name;
+    save(); renderModeBar(); renderBoard();
+  }
+  document.getElementById('phaseEditPop').classList.remove('show');
+}
+function deleteCurrentPhase() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot || plot.phases.length <= 1) { alert('フェーズは最低1つ必要です'); return; }
+  if (!confirm('このフェーズを削除しますか？\n（このフェーズのシーンは最初のフェーズに移動します）')) return;
+  const first = plot.phases.find(ph => ph.id !== editingPhaseId);
+  plot.scenes.filter(s => s.phaseId === editingPhaseId).forEach(s => s.phaseId = first.id);
+  plot.phases = plot.phases.filter(ph => ph.id !== editingPhaseId);
+  if (activePhaseId === editingPhaseId) activePhaseId = null;
+  save(); renderModeBar(); renderBoard();
+  document.getElementById('phaseEditPop').classList.remove('show');
+}
+
+// ── ボード描画 ──
+function renderBoard() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  const bc = document.getElementById('boardContent');
+  const phases = activePhaseId ? plot.phases.filter(ph => ph.id === activePhaseId) : plot.phases;
+
+  if (viewMode === 'list') {
+    renderListView(plot, phases, bc);
+  } else {
+    renderBoardView(plot, phases, bc);
+  }
+}
+
+function renderBoardView(plot, phases, bc) {
+  bc.style.padding = '20px';
+  bc.style.display = 'flex';
+  bc.style.flexDirection = 'column';
+  bc.style.gap = '24px';
+  bc.innerHTML = phases.map(ph => {
+    const scenes = plot.scenes
+      .filter(s => s.phaseId === ph.id)
+      .sort((a,b) => (a.order||0)-(b.order||0));
+    return `
+      <div class="board-phase" data-phase-id="${ph.id}">
+        <div class="phase-header">
+          <span class="phase-label-dot" style="background:${ph.color}"></span>
+          <span class="phase-label">${escHtml(ph.name)}</span>
+          <span class="phase-count">${scenes.length}</span>
+          <button class="phase-add-btn" onclick="addSceneToPhase('${ph.id}')">＋ シーン追加</button>
+        </div>
+        <div class="cards-row" data-phase-id="${ph.id}"
+          ondragover="onDragOverRow(event)" ondragleave="onDragLeaveRow(event)" ondrop="onDropRow(event,'${ph.id}')">
+          ${scenes.map((s,i) => renderCard(s, i+1, ph.color)).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCard(s, num, phaseColor) {
+  const barColor = s.color || phaseColor || '#d4c9b0';
+  const tags = (s.tags||'').split(/\s+/).filter(Boolean).slice(0,3);
+  const tension = s.tension || 0;
+  const tensionDots = tension ? '●'.repeat(tension) + '○'.repeat(5-tension) : '';
+  return `
+    <div class="scene-card" data-scene-id="${s.id}"
+      draggable="true"
+      ondragstart="onDragStart(event,'${s.id}')"
+      ondragend="onDragEnd(event)"
+      onclick="openSceneModal('${s.id}')">
+      <div class="card-color-bar" style="background:${barColor}"></div>
+      <div class="card-header">
+        <span class="card-num">${String(num).padStart(2,'0')}</span>
+        <span class="card-title">${escHtml(s.title||'（無題）')}</span>
+        <span class="card-drag-handle">⠿</span>
+      </div>
+      ${s.summary ? `<div class="card-body">${escHtml(s.summary)}</div>` : '<div class="card-body" style="color:#c8bfb0;">概要なし</div>'}
+      <div class="card-footer">
+        ${tags.map(t=>`<span class="card-tag">${escHtml(t)}</span>`).join('')}
+        ${tensionDots ? `<span class="card-chars" title="テンション">${tensionDots}</span>` : ''}
+        ${s.chars ? `<span class="card-chars">${escHtml(s.chars.slice(0,12))}</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderListView(plot, phases, bc) {
+  bc.style.padding = '0';
+  bc.style.display = 'block';
+  bc.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <thead style="background:var(--paper2);position:sticky;top:0;z-index:2;">
+        <tr>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:normal;letter-spacing:0.1em;font-size:9px;color:var(--muted);width:32px;">#</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:normal;letter-spacing:0.1em;font-size:9px;color:var(--muted);">タイトル</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:normal;letter-spacing:0.1em;font-size:9px;color:var(--muted);">概要</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:normal;letter-spacing:0.1em;font-size:9px;color:var(--muted);width:80px;">登場人物</th>
+          <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-weight:normal;letter-spacing:0.1em;font-size:9px;color:var(--muted);width:70px;">フェーズ</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${phases.flatMap(ph => {
+          const scenes = plot.scenes.filter(s => s.phaseId===ph.id).sort((a,b)=>(a.order||0)-(b.order||0));
+          return scenes.map((s,i) => `
+            <tr onclick="openSceneModal('${s.id}')" style="cursor:pointer;border-bottom:1px solid var(--border);"
+              onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background=''">
+              <td style="padding:8px 12px;color:var(--muted);">${i+1}</td>
+              <td style="padding:8px 12px;font-family:'Noto Serif JP',serif;">${escHtml(s.title||'（無題）')}</td>
+              <td style="padding:8px 12px;color:var(--muted);max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(s.summary||'')}</td>
+              <td style="padding:8px 12px;color:var(--muted);">${escHtml(s.chars||'')}</td>
+              <td style="padding:8px 12px;">
+                <span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;">
+                  <span style="width:6px;height:6px;border-radius:50%;background:${ph.color};flex-shrink:0;"></span>
+                  ${escHtml(ph.name)}
+                </span>
+              </td>
+            </tr>
+          `);
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ── 表示切り替え ──
+function toggleViewMode() {
+  viewMode = viewMode === 'board' ? 'list' : 'board';
+  document.getElementById('viewModeBtn').textContent = viewMode === 'board' ? '📄 リスト表示' : '📋 ボード表示';
+  renderBoard();
+}
+
+// ── シーン追加 ──
+function addScene() {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  const phaseId = activePhaseId || plot.phases[0]?.id;
+  addSceneToPhase(phaseId);
+}
+function addSceneToPhase(phaseId) {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  const maxOrder = Math.max(0, ...plot.scenes.filter(s=>s.phaseId===phaseId).map(s=>s.order||0));
+  const s = { id: uid(), phaseId, title: '', summary: '', detail: '', chars: '', location: '', time: '', tags: '', mood: '', tension: 0, color: '', order: maxOrder+1 };
+  plot.scenes.push(s);
+  save(); renderBoard();
+  // 新しいシーンを開く
+  setTimeout(() => openSceneModal(s.id), 60);
+}
+
+// ── シーンモーダル ──
+let sceneModalPlotId = null;
+function openSceneModal(sceneId) {
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  const s = plot.scenes.find(x => x.id === sceneId);
+  if (!s) return;
+  editingSceneId = sceneId;
+  sceneModalPlotId = plot.id;
+
+  document.getElementById('sceneModalTitle').textContent = s.title ? `📝 ${s.title}` : '📝 シーンを編集';
+  document.getElementById('sceneTitle').value    = s.title    || '';
+  document.getElementById('sceneSummary').value  = s.summary  || '';
+  document.getElementById('sceneDetail').value   = s.detail   || '';
+  document.getElementById('sceneChars').value    = s.chars    || '';
+  document.getElementById('sceneLocation').value = s.location || '';
+  document.getElementById('sceneTime').value     = s.time     || '';
+  document.getElementById('sceneTags').value     = s.tags     || '';
+  document.getElementById('sceneMood').value     = s.mood     || '';
+
+  // カラー選択
+  const cr = document.getElementById('sceneColorRow');
+  cr.innerHTML = CARD_COLORS.map(c =>
+    `<div class="color-chip${s.color===c?' sel':''}" style="background:${c}" data-color="${c}" onclick="pickSceneColor('${c}',this)" title="${c}"></div>`
+  ).join('');
+  // 「デフォルト」リセットボタン
+  cr.innerHTML += `<div class="color-chip" style="background:linear-gradient(135deg,#ddd 50%,#fff 50%);border:1px solid var(--border);" onclick="pickSceneColor('',null)" title="フェーズ色に従う">↺</div>`;
+
+  // テンション
+  const tr = document.getElementById('tensionRow');
+  tr.innerHTML = [1,2,3,4,5].map(v =>
+    `<button onclick="pickTension(${v},this)" style="width:24px;height:24px;border:1px solid var(--border);background:${(s.tension||0)>=v?'var(--accent2)':'var(--paper)'};color:${(s.tension||0)>=v?'#fff':'var(--muted)'};cursor:pointer;font-size:11px;" data-v="${v}">▲</button>`
+  ).join('');
+
+  // フェーズ選択
+  const ps = document.getElementById('scenePhase');
+  ps.innerHTML = plot.phases.map(ph =>
+    `<option value="${ph.id}"${s.phaseId===ph.id?' selected':''}>${escHtml(ph.name)}</option>`
+  ).join('');
+
+  document.getElementById('sceneModal').classList.add('show');
+  setTimeout(() => document.getElementById('sceneTitle').focus(), 60);
+}
+
+function pickSceneColor(color, el) {
+  document.querySelectorAll('#sceneColorRow .color-chip').forEach(c => c.classList.remove('sel'));
+  if (el) el.classList.add('sel');
+  // 一時保存は保存時に
+  document.getElementById('sceneColorRow').dataset.selectedColor = color;
+}
+
+function pickTension(v, btn) {
+  const cur = parseInt(btn.parentElement.dataset.tension || 0);
+  const newVal = (cur === v) ? 0 : v; // 同じ値クリックでリセット
+  btn.parentElement.dataset.tension = newVal;
+  btn.parentElement.querySelectorAll('button').forEach(b => {
+    const bv = parseInt(b.dataset.v);
+    b.style.background = bv <= newVal ? 'var(--accent2)' : 'var(--paper)';
+    b.style.color = bv <= newVal ? '#fff' : 'var(--muted)';
+  });
+}
+
+function saveSceneModal() {
+  const plot = plots.find(p => p.id === sceneModalPlotId);
+  if (!plot) return;
+  const s = plot.scenes.find(x => x.id === editingSceneId);
+  if (!s) return;
+
+  s.title    = document.getElementById('sceneTitle').value.trim();
+  s.summary  = document.getElementById('sceneSummary').value.trim();
+  s.detail   = document.getElementById('sceneDetail').value.trim();
+  s.chars    = document.getElementById('sceneChars').value.trim();
+  s.location = document.getElementById('sceneLocation').value.trim();
+  s.time     = document.getElementById('sceneTime').value.trim();
+  s.tags     = document.getElementById('sceneTags').value.trim();
+  s.mood     = document.getElementById('sceneMood').value.trim();
+  s.phaseId  = document.getElementById('scenePhase').value;
+  s.color    = document.getElementById('sceneColorRow').dataset.selectedColor ?? s.color;
+  s.tension  = parseInt(document.getElementById('tensionRow').dataset.tension || 0);
+
+  save(); closeSceneModal(); renderBoard(); showToast();
+}
+
+function closeSceneModal() {
+  document.getElementById('sceneModal').classList.remove('show');
+  editingSceneId = null;
+}
+
+function deleteCurrentScene() {
+  if (!confirm('このシーンを削除しますか？')) return;
+  const plot = plots.find(p => p.id === sceneModalPlotId);
+  if (!plot) return;
+  plot.scenes = plot.scenes.filter(s => s.id !== editingSceneId);
+  save(); closeSceneModal(); renderBoard();
+}
+
+// ── ドラッグ＆ドロップ ──
+let dragSceneId = null;
+
+function onDragStart(e, sceneId) {
+  dragSceneId = sceneId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.cards-row').forEach(r => r.classList.remove('drag-over'));
+  document.querySelectorAll('.scene-card').forEach(c => c.classList.remove('drag-over'));
+}
+function onDragOverRow(e) {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onDragLeaveRow(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+}
+function onDropRow(e, phaseId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragSceneId) return;
+  const plot = plots.find(p => p.id === currentPlotId);
+  if (!plot) return;
+  const s = plot.scenes.find(x => x.id === dragSceneId);
+  if (!s) return;
+
+  // ドロップ先の近くのカードを検出してその前に挿入
+  const cards = [...e.currentTarget.querySelectorAll('.scene-card')];
+  const afterId = _getDropTarget(e, cards);
+
+  s.phaseId = phaseId;
+  // order を再計算
+  const phScenes = plot.scenes.filter(sc => sc.phaseId === phaseId && sc.id !== dragSceneId)
+    .sort((a,b)=>(a.order||0)-(b.order||0));
+
+  if (afterId === null) {
+    // 末尾に追加
+    s.order = (phScenes[phScenes.length-1]?.order || 0) + 1;
+  } else {
+    const idx = phScenes.findIndex(sc => sc.id === afterId);
+    // insertBefore
+    phScenes.splice(idx, 0, s);
+    phScenes.forEach((sc, i) => { sc.order = i; });
+  }
+
+  save(); renderBoard();
+  dragSceneId = null;
+}
+
+function _getDropTarget(e, cards) {
+  for (const card of cards) {
+    if (card.dataset.sceneId === dragSceneId) continue;
+    const rect = card.getBoundingClientRect();
+    const mid  = rect.left + rect.width / 2;
+    if (e.clientX < mid) return card.dataset.sceneId;
+  }
+  return null;
+}
+
+// ── フローティングAI ──
+function toggleFAI() {
+  faiOpen = !faiOpen;
+  document.getElementById('floatAiPanel').classList.toggle('hidden', !faiOpen);
+  document.getElementById('floatAiBtn').classList.toggle('active', faiOpen);
+  if (faiOpen) {
+    _initFaiDrag();
+    document.getElementById('faiQ').focus();
+    updateFaiKeyStatus();
+  }
+}
+
+function setFaiProv(p) {
+  faiProv = p;
+  document.getElementById('faiProvG').classList.toggle('active', p==='gemini');
+  document.getElementById('faiProvC').classList.toggle('active', p==='claude');
+  updateFaiKeyStatus();
+}
+
+function updateFaiKeyStatus() {
+  const key = faiProv === 'gemini' ? faiKeys.gemini : faiKeys.claude;
+  document.getElementById('faiKeyStatus').textContent = key ? '✓ キー設定済' : 'キー未設定';
+  document.getElementById('faiKeyStatus').style.color = key ? 'var(--accent2)' : 'var(--muted)';
+}
+
+function promptApiKey() {
+  const label = faiProv === 'gemini' ? 'Gemini' : 'Claude';
+  const cur = faiProv === 'gemini' ? faiKeys.gemini : faiKeys.claude;
+  const key = prompt(`${label} APIキーを入力:`, cur || '');
+  if (key === null) return;
+  if (faiProv === 'gemini') faiKeys.gemini = key.trim();
+  else faiKeys.claude = key.trim();
+  save(); updateFaiKeyStatus();
+}
+
+async function faiAsk() {
+  const q = document.getElementById('faiQ').value.trim();
+  if (!q) return;
+  const key = faiProv === 'gemini' ? faiKeys.gemini : faiKeys.claude;
+  if (!key) { promptApiKey(); return; }
+
+  document.getElementById('faiQ').value = '';
+  _faiAddBubble('user', q);
+  faiHistory.push({ role: 'user', content: q });
+
+  const sendBtn = document.getElementById('faiSendBtn');
+  sendBtn.disabled = true;
+
+  try {
+    let answer = '';
+    if (faiProv === 'gemini') {
+      const messages = faiHistory.slice(-10).map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: messages })
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error.message);
+      answer = d.candidates?.[0]?.content?.parts?.[0]?.text || '（回答なし）';
+    } else {
+      const messages = faiHistory.slice(-10).filter(m => m.role !== 'system');
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 1024, messages })
+      });
+      const d = await res.json();
+      if (d.error) throw new Error(d.error.message);
+      answer = d.content?.[0]?.text || '（回答なし）';
+    }
+    _faiAddBubble('ai', answer);
+    faiHistory.push({ role: 'assistant', content: answer });
+  } catch(err) {
+    _faiAddBubble('err', '⚠ ' + err.message);
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
+function _faiAddBubble(type, text) {
+  const log = document.getElementById('faiLog');
+  // 初期メッセージ消去
+  log.querySelectorAll('span').forEach(s => s.remove());
+  const el = document.createElement('div');
+  el.className = 'fai-bubble ' + type;
+  el.textContent = text;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+function faiCopy() {
+  const bubbles = document.querySelectorAll('#faiLog .fai-bubble.ai');
+  if (!bubbles.length) return;
+  navigator.clipboard.writeText(bubbles[bubbles.length-1].textContent).then(() => showToast('コピーしました'));
+}
+function faiReset() {
+  faiHistory = [];
+  const log = document.getElementById('faiLog');
+  log.innerHTML = '<span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>';
+}
+
+let _faiDragInit = false;
+function _initFaiDrag() {
+  if (_faiDragInit) return;
+  _faiDragInit = true;
+  const panel = document.getElementById('floatAiPanel');
+  const hdr   = document.getElementById('faiHdr');
+  const resz  = document.getElementById('faiResize');
+  let ox=0,oy=0,px=0,py=0,rw=0,rh=0,rx=0,ry=0;
+  // ドラッグ移動
+  hdr.addEventListener('mousedown', e => {
+    ox=e.clientX; oy=e.clientY;
+    const r=panel.getBoundingClientRect(); px=r.left; py=r.top;
+    const mm = ev => {
+      panel.style.left=(px+ev.clientX-ox)+'px'; panel.style.top=(py+ev.clientY-oy)+'px';
+      panel.style.right='auto'; panel.style.bottom='auto';
+    };
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',()=>document.removeEventListener('mousemove',mm),{once:true});
+  });
+  // リサイズ
+  resz.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    const r=panel.getBoundingClientRect(); rw=r.width; rh=r.height; rx=e.clientX; ry=e.clientY;
+    const mm = ev => {
+      panel.style.width  = Math.max(240, rw+ev.clientX-rx)+'px';
+      panel.style.height = Math.max(260, rh+ev.clientY-ry)+'px';
+    };
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',()=>document.removeEventListener('mousemove',mm),{once:true});
+  });
+}
+
+// ── モーダル外クリックで閉じる ──
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('mousedown', e => { el._md = e.target === el; });
+  el.addEventListener('click', e => { if (el._md && e.target === el) el.classList.remove('show'); });
+});
+
+document.addEventListener('click', e => {
+  const pop = document.getElementById('phaseEditPop');
+  if (pop.classList.contains('show') && !pop.contains(e.target) && !e.target.closest('.phase-tab')) {
+    pop.classList.remove('show');
+  }
+});
+
+// ── 初期化 ──
+load();
+renderPlotList();
+if (plots.length > 0) openPlot(plots[0].id);
+</script>
+</body>
+</html>
