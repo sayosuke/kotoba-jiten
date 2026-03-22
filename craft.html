@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://api.anthropic.com https://generativelanguage.googleapis.com;">
 <title>創作ノート</title>
 <style>
 :root {
@@ -652,19 +651,11 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 /* ── フローティングAIウィンドウ ── */
 /* ── 右端固定AIタブ ── */
 #fab-cluster {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1100;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  pointer-events: none;
+  position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+  z-index: 1100; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 2px; pointer-events: none;
 }
 #fab-cluster > * { pointer-events: auto; }
-
 #floatAiBtn {
   width: 36px; height: 36px; border-radius: 4px 0 0 4px;
   background: var(--ink); color: var(--paper);
@@ -682,15 +673,13 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
   border: 1px solid rgba(255,255,255,0.1); border-right: none;
   font-size: 9px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.2s;
-  padding: 0; line-height: 1;
+  opacity: 0; transition: opacity 0.2s; padding: 0; line-height: 1;
 }
 #fab-cluster:hover #floatAiHideBtn { opacity: 1; }
 #faiShowAgainBtn {
   position: fixed; top: 50%; right: 0; transform: translateY(-50%);
-  z-index: 1098;
-  writing-mode: vertical-rl; font-size: 10px; padding: 10px 5px;
-  background: rgba(0,0,0,0.5); color: #fff;
+  z-index: 1098; writing-mode: vertical-rl; font-size: 10px;
+  padding: 10px 5px; background: rgba(0,0,0,0.5); color: #fff;
   border: none; border-radius: 4px 0 0 4px; cursor: pointer;
   display: none; letter-spacing: 0.05em; line-height: 1.2;
 }
@@ -1266,6 +1255,339 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
   ノートを削除しました
   <button onclick="undoDeleteNote()">↩ 元に戻す</button>
 </div>
+
+
+<!-- ── メモ入力モーダル ── -->
+<div class="modal-overlay" id="memoModal">
+  <div class="memo-modal-box">
+    <div class="memo-modal-hdr">
+      <span class="memo-modal-hdr-title" id="memoModalTitle">💡 アイディアメモを追加</span>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <div style="position:relative;">
+          <button class="btn-secondary" onclick="toggleMemoTmplPanel()" id="memoTmplBtn" style="font-size:11px;padding:4px 10px;">📋 テンプレート</button>
+          <div id="memoTmplPanel" style="display:none;position:absolute;top:100%;right:0;z-index:200;background:var(--paper);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:240px;max-width:320px;border-radius:2px;margin-top:4px;">
+            <div style="padding:6px 10px;background:var(--paper2);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
+              📋 付箋テンプレート
+              <button onclick="document.getElementById('memoTmplPanel').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);">✕</button>
+            </div>
+            <div id="memoTmplList" style="max-height:240px;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;"></div>
+            <div style="padding:6px 10px;border-top:1px solid var(--border);background:var(--paper2);">
+              <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">現在の内容をテンプレートとして保存</div>
+              <div style="display:flex;gap:4px;">
+                <input type="text" id="memoTmplNameInput" placeholder="テンプレート名…" style="flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);"
+                  onkeydown="if(!event.isComposing&&event.key==='Enter'){event.preventDefault();saveMemoTmpl();}" />
+                <button onclick="saveMemoTmpl()" style="font-size:11px;padding:3px 10px;background:var(--accent);color:#fff;border:none;cursor:pointer;">保存</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="saveMemo()">保存する</button>
+        <button class="btn-secondary" onclick="closeModal('memoModal')">キャンセル</button>
+      </div>
+    </div>
+
+    <!-- メタバー：カラー・マーク・タイトル・タグ を1行に -->
+    <div class="memo-meta-bar">
+      <!-- カラーボタン（クリックでポップアップ） -->
+      <div id="memoColorPreview" style="width:18px;height:18px;border-radius:50%;background:#f5e6d0;box-shadow:0 0 0 1px rgba(0,0,0,0.18);cursor:pointer;flex-shrink:0;" title="カラーを選択" onclick="toggleMemoPopup('colorPop',this)"></div>
+      <!-- マーク（絵文字）ボタン -->
+      <span class="memo-meta-emoji-preview" id="memoSelEmoji" title="マークを選択" onclick="toggleMemoPopup('emojiPop',this)">　</span>
+      <!-- タイトル -->
+      <input class="memo-title-input" id="memoTitle" placeholder="タイトル・見出し" />
+      <!-- タグ -->
+      <span style="font-size:9px;color:var(--muted);flex-shrink:0;">#タグ</span>
+      <input class="memo-tag-input-sm" id="memoTags" placeholder="アイディア キャラ" />
+      <!-- グループ -->
+      <span style="font-size:9px;color:var(--muted);flex-shrink:0;">📁</span>
+      <select id="memoGroupSel" style="font-size:10px;padding:2px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);max-width:110px;"></select>
+      <!-- クリアボタン -->
+      <button onclick="clearMemoModal()" title="入力内容をすべてクリア" style="flex-shrink:0;font-size:10px;padding:2px 8px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;">✕ クリア</button>
+    </div>
+
+    <!-- カラーポップアップ -->
+    <div class="memo-popup" id="colorPop">
+      <div class="memo-popup-title">カラー</div>
+      <div class="memo-color-row" id="memoColorRow" style="gap:6px;flex-wrap:wrap;display:flex;max-width:240px;">
+        <!-- 淡いパステル（暖色系） -->
+        <div class="color-dot" style="background:#f5e6d0;" data-color="#f5e6d0" onclick="pickColor(this)" title="クリーム"></div>
+        <div class="color-dot" style="background:#fde8e8;" data-color="#fde8e8" onclick="pickColor(this)" title="ベビーピンク"></div>
+        <div class="color-dot" style="background:#fffde8;" data-color="#fffde8" onclick="pickColor(this)" title="レモン"></div>
+        <div class="color-dot" style="background:#fdebd0;" data-color="#fdebd0" onclick="pickColor(this)" title="ピーチ"></div>
+        <div class="color-dot" style="background:#fce4ec;" data-color="#fce4ec" onclick="pickColor(this)" title="ローズ"></div>
+        <div class="color-dot" style="background:#fff3e0;" data-color="#fff3e0" onclick="pickColor(this)" title="オレンジクリーム"></div>
+        <!-- 淡いパステル（寒色・緑系） -->
+        <div class="color-dot" style="background:#e8f0e4;" data-color="#e8f0e4" onclick="pickColor(this)" title="ミントグリーン"></div>
+        <div class="color-dot" style="background:#e0f4f8;" data-color="#e0f4f8" onclick="pickColor(this)" title="スカイ"></div>
+        <div class="color-dot" style="background:#e8eaf8;" data-color="#e8eaf8" onclick="pickColor(this)" title="ラベンダー"></div>
+        <div class="color-dot" style="background:#f3e8f8;" data-color="#f3e8f8" onclick="pickColor(this)" title="ライラック"></div>
+        <div class="color-dot" style="background:#e8f8f5;" data-color="#e8f8f5" onclick="pickColor(this)" title="アクア"></div>
+        <div class="color-dot" style="background:#eaf4fb;" data-color="#eaf4fb" onclick="pickColor(this)" title="アイスブルー"></div>
+        <!-- くすみカラー（中間色） -->
+        <div class="color-dot" style="background:#d4b896;" data-color="#d4b896" onclick="pickColor(this)" title="くすみサンド"></div>
+        <div class="color-dot" style="background:#e8a598;" data-color="#e8a598" onclick="pickColor(this)" title="くすみコーラル"></div>
+        <div class="color-dot" style="background:#c5ddb0;" data-color="#c5ddb0" onclick="pickColor(this)" title="くすみグリーン"></div>
+        <div class="color-dot" style="background:#a8c8e8;" data-color="#a8c8e8" onclick="pickColor(this)" title="くすみブルー"></div>
+        <div class="color-dot" style="background:#c8b0d8;" data-color="#c8b0d8" onclick="pickColor(this)" title="くすみパープル"></div>
+        <div class="color-dot" style="background:#e8c88a;" data-color="#e8c88a" onclick="pickColor(this)" title="くすみイエロー"></div>
+        <div class="color-dot" style="background:#b8d4c8;" data-color="#b8d4c8" onclick="pickColor(this)" title="くすみセージ"></div>
+        <div class="color-dot" style="background:#d8b0a8;" data-color="#d8b0a8" onclick="pickColor(this)" title="くすみテラコッタ"></div>
+        <!-- ダーク系 -->
+        <div class="color-dot" style="background:#3a2010;" data-color="#3a2010" onclick="pickColor(this)" title="ダークブラウン"></div>
+        <div class="color-dot" style="background:#c4763a;" data-color="#c4763a" onclick="pickColor(this)" title="バーントオレンジ"></div>
+        <div class="color-dot" style="background:#2c3e50;" data-color="#2c3e50" onclick="pickColor(this)" title="ダークネイビー"></div>
+        <div class="color-dot" style="background:#4a5a3a;" data-color="#4a5a3a" onclick="pickColor(this)" title="ダークグリーン"></div>
+        <div class="color-dot" style="background:#6a3050;" data-color="#6a3050" onclick="pickColor(this)" title="ダークプラム"></div>
+        <div class="color-dot" style="background:#5a4a2a;" data-color="#5a4a2a" onclick="pickColor(this)" title="ダークオリーブ"></div>
+        <div class="color-dot" style="background:#1a3a4a;" data-color="#1a3a4a" onclick="pickColor(this)" title="ディープティール"></div>
+        <div class="color-dot" style="background:#3a1a1a;" data-color="#3a1a1a" onclick="pickColor(this)" title="ダークローズウッド"></div>
+      </div>
+    </div>
+
+    <!-- 絵文字ポップアップ -->
+    <div class="memo-popup" id="emojiPop">
+      <div class="memo-popup-title">マーク（付箋左上に表示）</div>
+      <div class="memo-emoji-row" id="memoEmojiRow" style="max-height:180px;overflow-y:auto;">
+        <button class="em-btn" data-em="" onclick="pickEmoji(this)" title="なし" style="font-size:13px;">✕</button>
+        <!-- アイディア・メモ -->
+        <button class="em-btn" data-em="💡" onclick="pickEmoji(this)">💡</button><button class="em-btn" data-em="📌" onclick="pickEmoji(this)">📌</button><button class="em-btn" data-em="📍" onclick="pickEmoji(this)">📍</button><button class="em-btn" data-em="✨" onclick="pickEmoji(this)">✨</button><button class="em-btn" data-em="🔥" onclick="pickEmoji(this)">🔥</button><button class="em-btn" data-em="❓" onclick="pickEmoji(this)">❓</button><button class="em-btn" data-em="❗" onclick="pickEmoji(this)">❗</button><button class="em-btn" data-em="💬" onclick="pickEmoji(this)">💬</button><button class="em-btn" data-em="🗨️" onclick="pickEmoji(this)">🗨️</button><button class="em-btn" data-em="🎯" onclick="pickEmoji(this)">🎯</button><button class="em-btn" data-em="📖" onclick="pickEmoji(this)">📖</button><button class="em-btn" data-em="📚" onclick="pickEmoji(this)">📚</button><button class="em-btn" data-em="✏️" onclick="pickEmoji(this)">✏️</button><button class="em-btn" data-em="🖊️" onclick="pickEmoji(this)">🖊️</button><button class="em-btn" data-em="📝" onclick="pickEmoji(this)">📝</button><button class="em-btn" data-em="🔖" onclick="pickEmoji(this)">🔖</button><button class="em-btn" data-em="📎" onclick="pickEmoji(this)">📎</button><button class="em-btn" data-em="🗒️" onclick="pickEmoji(this)">🗒️</button>
+        <!-- 幻想・神秘 -->
+        <button class="em-btn" data-em="🔮" onclick="pickEmoji(this)">🔮</button><button class="em-btn" data-em="💎" onclick="pickEmoji(this)">💎</button><button class="em-btn" data-em="🗝️" onclick="pickEmoji(this)">🗝️</button><button class="em-btn" data-em="🪄" onclick="pickEmoji(this)">🪄</button><button class="em-btn" data-em="💫" onclick="pickEmoji(this)">💫</button><button class="em-btn" data-em="⭐" onclick="pickEmoji(this)">⭐</button><button class="em-btn" data-em="🌟" onclick="pickEmoji(this)">🌟</button><button class="em-btn" data-em="🌠" onclick="pickEmoji(this)">🌠</button><button class="em-btn" data-em="☄️" onclick="pickEmoji(this)">☄️</button><button class="em-btn" data-em="🌙" onclick="pickEmoji(this)">🌙</button><button class="em-btn" data-em="🌛" onclick="pickEmoji(this)">🌛</button><button class="em-btn" data-em="☀️" onclick="pickEmoji(this)">☀️</button><button class="em-btn" data-em="🌅" onclick="pickEmoji(this)">🌅</button><button class="em-btn" data-em="🏔️" onclick="pickEmoji(this)">🏔️</button><button class="em-btn" data-em="🗺️" onclick="pickEmoji(this)">🗺️</button><button class="em-btn" data-em="⚔️" onclick="pickEmoji(this)">⚔️</button><button class="em-btn" data-em="🛡️" onclick="pickEmoji(this)">🛡️</button><button class="em-btn" data-em="👑" onclick="pickEmoji(this)">👑</button><button class="em-btn" data-em="💀" onclick="pickEmoji(this)">💀</button><button class="em-btn" data-em="👁️" onclick="pickEmoji(this)">👁️</button>
+        <!-- 自然 -->
+        <button class="em-btn" data-em="🌿" onclick="pickEmoji(this)">🌿</button><button class="em-btn" data-em="🍃" onclick="pickEmoji(this)">🍃</button><button class="em-btn" data-em="🌱" onclick="pickEmoji(this)">🌱</button><button class="em-btn" data-em="🌾" onclick="pickEmoji(this)">🌾</button><button class="em-btn" data-em="🍀" onclick="pickEmoji(this)">🍀</button><button class="em-btn" data-em="🌸" onclick="pickEmoji(this)">🌸</button><button class="em-btn" data-em="🌺" onclick="pickEmoji(this)">🌺</button><button class="em-btn" data-em="🌻" onclick="pickEmoji(this)">🌻</button><button class="em-btn" data-em="🌼" onclick="pickEmoji(this)">🌼</button><button class="em-btn" data-em="🌹" onclick="pickEmoji(this)">🌹</button><button class="em-btn" data-em="🍂" onclick="pickEmoji(this)">🍂</button><button class="em-btn" data-em="🌊" onclick="pickEmoji(this)">🌊</button><button class="em-btn" data-em="🌈" onclick="pickEmoji(this)">🌈</button><button class="em-btn" data-em="❄️" onclick="pickEmoji(this)">❄️</button><button class="em-btn" data-em="🔥" onclick="pickEmoji(this)">🔥</button><button class="em-btn" data-em="⚡" onclick="pickEmoji(this)">⚡</button><button class="em-btn" data-em="🌪️" onclick="pickEmoji(this)">🌪️</button>
+        <!-- 生き物 -->
+        <button class="em-btn" data-em="🦋" onclick="pickEmoji(this)">🦋</button><button class="em-btn" data-em="🐾" onclick="pickEmoji(this)">🐾</button><button class="em-btn" data-em="🦊" onclick="pickEmoji(this)">🦊</button><button class="em-btn" data-em="🐱" onclick="pickEmoji(this)">🐱</button><button class="em-btn" data-em="🐰" onclick="pickEmoji(this)">🐰</button><button class="em-btn" data-em="🐺" onclick="pickEmoji(this)">🐺</button><button class="em-btn" data-em="🦁" onclick="pickEmoji(this)">🦁</button><button class="em-btn" data-em="🐦" onclick="pickEmoji(this)">🐦</button><button class="em-btn" data-em="🦅" onclick="pickEmoji(this)">🦅</button><button class="em-btn" data-em="🐉" onclick="pickEmoji(this)">🐉</button><button class="em-btn" data-em="🦄" onclick="pickEmoji(this)">🦄</button><button class="em-btn" data-em="🐟" onclick="pickEmoji(this)">🐟</button>
+        <!-- 感情・ハート -->
+        <button class="em-btn" data-em="💖" onclick="pickEmoji(this)">💖</button><button class="em-btn" data-em="💙" onclick="pickEmoji(this)">💙</button><button class="em-btn" data-em="💚" onclick="pickEmoji(this)">💚</button><button class="em-btn" data-em="💛" onclick="pickEmoji(this)">💛</button><button class="em-btn" data-em="🧡" onclick="pickEmoji(this)">🧡</button><button class="em-btn" data-em="💜" onclick="pickEmoji(this)">💜</button><button class="em-btn" data-em="🖤" onclick="pickEmoji(this)">🖤</button><button class="em-btn" data-em="🤍" onclick="pickEmoji(this)">🤍</button><button class="em-btn" data-em="💔" onclick="pickEmoji(this)">💔</button><button class="em-btn" data-em="😊" onclick="pickEmoji(this)">😊</button><button class="em-btn" data-em="😢" onclick="pickEmoji(this)">😢</button><button class="em-btn" data-em="😤" onclick="pickEmoji(this)">😤</button><button class="em-btn" data-em="😨" onclick="pickEmoji(this)">😨</button><button class="em-btn" data-em="🤔" onclick="pickEmoji(this)">🤔</button>
+        <!-- 創作・表現 -->
+        <button class="em-btn" data-em="🎨" onclick="pickEmoji(this)">🎨</button><button class="em-btn" data-em="🎭" onclick="pickEmoji(this)">🎭</button><button class="em-btn" data-em="🎬" onclick="pickEmoji(this)">🎬</button><button class="em-btn" data-em="🎵" onclick="pickEmoji(this)">🎵</button><button class="em-btn" data-em="🎶" onclick="pickEmoji(this)">🎶</button><button class="em-btn" data-em="🎮" onclick="pickEmoji(this)">🎮</button><button class="em-btn" data-em="🎲" onclick="pickEmoji(this)">🎲</button><button class="em-btn" data-em="🎪" onclick="pickEmoji(this)">🎪</button><button class="em-btn" data-em="🏆" onclick="pickEmoji(this)">🏆</button>
+        <!-- 警告・管理 -->
+        <button class="em-btn" data-em="⚠️" onclick="pickEmoji(this)">⚠️</button><button class="em-btn" data-em="🚨" onclick="pickEmoji(this)">🚨</button><button class="em-btn" data-em="🔒" onclick="pickEmoji(this)">🔒</button><button class="em-btn" data-em="🔑" onclick="pickEmoji(this)">🔑</button><button class="em-btn" data-em="⏳" onclick="pickEmoji(this)">⏳</button><button class="em-btn" data-em="⌛" onclick="pickEmoji(this)">⌛</button><button class="em-btn" data-em="🕯️" onclick="pickEmoji(this)">🕯️</button><button class="em-btn" data-em="🔍" onclick="pickEmoji(this)">🔍</button>
+        <!-- 飲食 -->
+        <button class="em-btn" data-em="☕" onclick="pickEmoji(this)">☕</button><button class="em-btn" data-em="🍵" onclick="pickEmoji(this)">🍵</button><button class="em-btn" data-em="🍷" onclick="pickEmoji(this)">🍷</button><button class="em-btn" data-em="🍺" onclick="pickEmoji(this)">🍺</button><button class="em-btn" data-em="🍰" onclick="pickEmoji(this)">🍰</button><button class="em-btn" data-em="🍎" onclick="pickEmoji(this)">🍎</button>
+      </div>
+    </div>
+
+    <!-- リンク管理 -->
+    <div class="memo-meta-bar" id="memoLinkBar" style="gap:6px;flex-wrap:wrap;">
+      <span style="font-size:9px;color:var(--muted);flex-shrink:0;">🔗 リンク</span>
+      <div id="memoLinkList" style="display:flex;flex-wrap:wrap;gap:4px;flex:1;"></div>
+      <button onclick="addMemoLink()" style="flex-shrink:0;font-size:10px;padding:2px 8px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;">＋ 追加</button>
+    </div>
+
+    <div class="memo-modal-body">
+      <!-- 左：表面 -->
+      <div class="memo-side">
+        <div class="memo-side-lbl" style="display:flex;align-items:center;">
+          <span>📷 表面</span>
+          <button onclick="clearMemoFront()" title="表面の本文をクリア" style="margin-left:auto;font-size:9px;padding:1px 7px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:1px;">✕ 本文クリア</button>
+        </div>
+        <div class="memo-tb" id="memoTbFront"></div>
+        <textarea class="memo-body-ta" id="memoFront" placeholder="表面メモ（短く、ひと目でわかるように）&#10;&#10;ツールバーから罫線・記号・絵文字を挿入できます"></textarea>
+      </div>
+      <!-- 右：裏面 -->
+      <div class="memo-side">
+        <div class="memo-side-lbl" style="display:flex;align-items:center;">
+          <span>📝 裏面（自由記述）</span>
+          <button onclick="clearMemoBack()" title="裏面の本文をクリア" style="margin-left:auto;font-size:9px;padding:1px 7px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:1px;">✕ 本文クリア</button>
+        </div>
+        <div class="memo-tb" id="memoTbBack"></div>
+        <textarea class="memo-body-ta" id="memoBack" placeholder="詳細・展開案・参考メモなど自由に…&#10;&#10;ツールバーから罫線・記号・絵文字を挿入できます"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="memo-fab" id="memoFab" onclick="showMemoModal()" title="アイディアを追加">＋</button>
+
+<button id="memoScrollTopBtn" onclick="memoScrollTop()" title="最上部へ">↑</button>
+
+<!-- グループ管理モーダル -->
+<div class="modal-overlay" id="groupManagerModal">
+  <div class="modal" style="width:460px;">
+    <h2>📁 グループ管理</h2>
+    <div id="groupManagerList" style="margin-bottom:14px;max-height:200px;overflow-y:auto;"></div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:9px;letter-spacing:0.1em;color:var(--muted);margin-bottom:6px;">新しいグループを追加</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+        <input type="text" id="newGroupName" placeholder="グループ名" 
+          style="flex:1;padding:5px 8px;border:1px solid var(--border);font-family:sans-serif;font-size:12px;"
+          onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'){event.preventDefault();addGroup();}" />
+        <!-- カラー表示ボタン（クリックでpickerを開く） -->
+        <div id="groupColorPreview" style="width:28px;height:28px;border-radius:50%;background:#c4763a;border:2px solid var(--border);cursor:pointer;flex-shrink:0;" title="カラーを選択" onclick="toggleGroupColorPicker()"></div>
+        <button class="btn-primary" onclick="addGroup()" style="white-space:nowrap;">＋ 追加</button>
+      </div>
+      <!-- カラーピッカー（プリセット＋カスタム） -->
+      <div id="groupColorPicker" style="display:none;background:var(--paper2);border:1px solid var(--border);border-radius:3px;padding:10px 12px;margin-bottom:8px;">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-bottom:6px;">プリセットカラー</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;" id="groupColorPresets"></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:9px;color:var(--muted);">カスタム：</span>
+          <input type="color" id="newGroupColor" value="#c4763a"
+            style="width:36px;height:28px;border:1px solid var(--border);padding:1px;cursor:pointer;"
+            title="カスタムカラーを選択（スポイトも使用可）"
+            oninput="onGroupColorCustom(this)" />
+          <span style="font-size:10px;color:var(--muted);" id="groupColorHex">#c4763a</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:12px;">
+      <button class="btn-secondary" onclick="closeModal('groupManagerModal')">閉じる</button>
+    </div>
+  </div>
+</div>
+<!-- ── フローティングAIボタン ── -->
+<div id="fab-cluster">
+  <button id="floatAiBtn" onclick="toggleFloatAi()" title="AIに質問（どこからでも使えます）">🤖</button>
+  <button id="floatAiHideBtn" onclick="hideFloatAiBtn()" title="AIボタンを一時的に隠す">✕</button>
+</div>
+<button id="faiShowAgainBtn" onclick="showFloatAiBtn()" title="AIボタンを再表示">🤖 再表示</button>
+
+<!-- ── フローティングAIパネル ── -->
+<div id="floatAiPanel" class="hidden">
+  <div class="fai-header" id="faiHeader">
+    <span class="fai-title">🤖 AI アシスタント</span>
+    <span class="fai-ctx-label" id="faiCtxLabel">コンテキストなし</span>
+    <button class="fai-close-btn" onclick="toggleFloatAi()" title="閉じる">×</button>
+  </div>
+  <div class="fai-prov-row">
+    <button class="fai-prov-btn active" id="faiProvGemini" onclick="setFaiProv('gemini')">Gemini</button>
+    <button class="fai-prov-btn" id="faiProvClaude" onclick="setFaiProv('claude')">Claude</button>
+    <span class="fai-ctx-info" id="faiCtxInfo">—</span>
+  </div>
+  <!-- 選択テキストバー -->
+  <div class="fai-sel-bar" id="faiSelBar">
+    <span style="font-size:9px;color:var(--muted);flex-shrink:0;">📌 選択中</span>
+    <span class="fai-sel-tag" id="faiSelTag"></span>
+    <!-- エディタからの選択時 -->
+    <span id="faiSelEditorBtns" style="display:flex;gap:2px;">
+      <button class="fai-sel-btn" onclick="faiSearchWithSelection()" title="質問欄にセットして自由編集・送信">🔍 AI検索</button>
+      <button class="fai-sel-btn" onclick="faiAskWithSelection('この文を改善して')">改善</button>
+      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容を展開して')">展開</button>
+      <button class="fai-sel-btn" onclick="faiAskWithSelection('この文にフィードバックをください')">FB</button>
+    </span>
+    <!-- AIバブルからの選択時 -->
+    <span id="faiSelAiBubbleBtns" style="display:none;gap:2px;">
+      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容をもっと深く掘り下げて')">🔍 深堀</button>
+      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容を展開して')">展開</button>
+      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容について別の視点から考えて')">別視点</button>
+    </span>
+    <button class="fai-sel-btn" onclick="faiClearSelection()" style="margin-left:auto;">✕</button>
+  </div>
+  <div class="fai-log" id="faiLog">
+    <span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>
+  </div>
+  <div class="fai-insert-row" id="faiInsertRow">
+    <button class="fai-ins-btn primary" onclick="faiInsertToEditor()" title="現在開いているノートに挿入">📋 挿入</button>
+    <button class="fai-ins-btn primary" onclick="faiInsertToNewNote()" title="新しいノートを作成して挿入">＋ 新規ノートに挿入</button>
+    <button class="fai-ins-btn" onclick="faiSaveAsMemoDialog()">💡 付箋に保存</button>
+    <button class="fai-ins-btn" onclick="faiCopyAnswer()">コピー</button>
+    <button class="fai-ins-btn" onclick="faiSaveToHistory()">📚 履歴に保存</button>
+    <button class="fai-ins-btn" onclick="faiToggleHistory()" title="過去の会話を呼び出す">📂 履歴</button>
+    <button class="fai-ins-btn" onclick="faiResetChat()">🔄 リセット</button>
+    <button class="fai-ins-btn" onclick="faiUnselectAllBubbles()" title="バブル選択を全解除">☐ 全解除</button>
+  </div>
+  <!-- 履歴パネル -->
+  <div id="faiHistoryPanel" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:var(--paper);border:1px solid var(--border);border-bottom:none;box-shadow:0 -4px 16px rgba(0,0,0,0.12);z-index:10;max-height:260px;display:none;flex-direction:column;">
+    <div style="padding:5px 10px;background:var(--ink);color:var(--paper);font-size:10px;letter-spacing:0.1em;display:flex;align-items:center;flex-shrink:0;">
+      📚 会話履歴
+      <button onclick="faiCloseHistory()" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:13px;padding:0 2px;">×</button>
+    </div>
+    <div id="faiHistoryList" style="flex:1;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin;"></div>
+  </div>
+  <!-- テンプレートパネル（質問入力の上に開く） -->
+  <div style="position:relative;">
+    <div class="fai-tmpl-panel" id="faiTmplPanel">
+      <div class="fai-tmpl-hdr">
+        📋 質問テンプレート
+        <button onclick="faiCloseTmpl()" style="margin-left:auto;font-size:10px;background:none;border:none;cursor:pointer;color:var(--muted);">✕</button>
+      </div>
+      <div class="fai-tmpl-list" id="faiTmplList"></div>
+      <div class="fai-tmpl-add">
+        <input class="fai-tmpl-input" id="faiTmplInput" placeholder="現在の質問をテンプレートとして保存…"
+          onkeydown="if(!event.isComposing&&event.key==='Enter'){event.preventDefault();faiSaveTmpl();}" />
+        <button class="fai-tmpl-save-btn" onclick="faiSaveTmpl()">保存</button>
+      </div>
+    </div>
+    <div class="fai-input-area">
+      <button class="fai-ins-btn" onclick="faiToggleTmpl()" title="テンプレート" style="align-self:stretch;padding:0 8px;font-size:14px;">📋</button>
+      <textarea class="fai-textarea" id="faiQuestion" placeholder="何でも質問できます。Ctrl+Enterで送信。&#10;📋 でテンプレート登録・呼び出し"
+        onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&event.altKey){event.preventDefault();faiAsk();}"></textarea>
+      <button class="fai-send-btn" id="faiSendBtn" onclick="faiAsk()">送信<br><span style="font-size:8px;opacity:0.7;">Alt+↵</span></button>
+    </div>
+  </div>
+  <div class="fai-resize-handle" id="faiResizeHandle"></div>
+</div>
+
+<!-- FAI 付箋保存ダイアログ -->
+<div class="fai-save-memo-overlay" id="faiSaveMemoOverlay" onclick="if(event.target===this&&_overlayMouseDownTarget===this)faiCloseSaveMemo()">
+  <div class="fai-save-memo-box">
+    <h3>💡 AI回答を付箋に保存</h3>
+    <!-- 保存先選択 -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:9px;letter-spacing:0.1em;color:var(--muted);margin-bottom:4px;">保存先</div>
+      <div class="fai-save-dest-row">
+        <button class="fai-save-dest-btn" data-dest="front" onclick="faiSetDest(this)">📷 表面のみ</button>
+        <button class="fai-save-dest-btn" data-dest="back" onclick="faiSetDest(this)">📝 裏面のみ</button>
+        <button class="fai-save-dest-btn active" data-dest="both" onclick="faiSetDest(this)">📷+📝 両面に分けて</button>
+        <button class="fai-save-dest-btn" data-dest="existing" onclick="faiSetDest(this)">📌 既存の付箋に追記</button>
+      </div>
+    </div>
+    <!-- 複数バブル振り分けUI（複数チェック時のみ表示） -->
+    <div class="fai-assign-ui" id="faiAssignUI" style="display:none;">
+      <div class="fai-assign-header">📋 各回答の振り分け（📷表面 / 📝裏面 / ✕除外）</div>
+      <div class="fai-assign-list" id="faiAssignList"></div>
+    </div>
+    <!-- 新規：タイトル（既存モード以外で表示） -->
+    <div id="faiSaveTitleWrap" class="fai-save-field">
+      <label>タイトル</label>
+      <input type="text" id="faiSaveMemoTitle" placeholder="付箋のタイトル" />
+    </div>
+    <!-- 表面のみ / 裏面のみ -->
+    <div id="faiSaveSingle" class="fai-save-field" style="display:none;">
+      <label id="faiSaveSingleLabel">表面（本文）</label>
+      <textarea id="faiSaveMemoBody" rows="4"></textarea>
+    </div>
+    <!-- 両面分割（デフォルト表示） -->
+    <div id="faiSaveBoth" class="fai-save-split">
+      <div>
+        <label>📷 表面</label>
+        <textarea id="faiSaveFront" placeholder="短く・ひと目でわかるように"></textarea>
+      </div>
+      <div>
+        <label>📝 裏面</label>
+        <textarea id="faiSaveBack" placeholder="詳細・展開・参考メモなど"></textarea>
+      </div>
+    </div>
+    <!-- 既存付箋への追記 -->
+    <div id="faiSaveExisting" style="display:none;">
+      <div class="fai-save-field">
+        <label>追記する付箋を選択</label>
+        <select id="faiExistingMemoSel" style="width:100%;padding:5px 8px;border:1px solid var(--border);background:var(--paper2);font-size:12px;color:var(--ink);" onchange="faiPreviewExisting()"></select>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <button class="fai-save-dest-btn active" data-exdest="back" id="faiExDestBack" onclick="faiSetExDest('back')">📝 裏面に追記</button>
+        <button class="fai-save-dest-btn" data-exdest="front" id="faiExDestFront" onclick="faiSetExDest('front')">📷 表面に追記</button>
+      </div>
+      <div class="fai-save-field">
+        <label id="faiExistingPreviewLbl">裏面（現在の内容）</label>
+        <textarea id="faiExistingPreview" rows="4" style="padding:5px 8px;border:1px solid var(--border);background:var(--paper2);font-family:serif;font-size:11px;line-height:1.8;color:var(--ink);width:100%;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div id="faiSaveTagWrap" class="fai-save-field" style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+      <label style="margin:0;flex-shrink:0;">タグ</label>
+      <input type="text" id="faiSaveMemoTags" placeholder="AI回答 創作" style="flex:1;" />
+    </div>
+    <div class="fai-save-field" style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+      <label style="margin:0;flex-shrink:0;">グループ</label>
+      <select id="faiSaveGroupSel" style="flex:1;padding:4px 8px;border:1px solid var(--border);background:var(--paper2);font-size:12px;color:var(--ink);"></select>
+    </div>
+    <div class="fai-save-actions">
+      <button class="btn-primary" onclick="faiDoSaveAsMemo()">💾 付箋として保存</button>
+      <button class="btn-secondary" onclick="faiCloseSaveMemo()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 // ─── 状態 ───────────────────────────────────
@@ -2254,23 +2576,19 @@ let emojiPanelTarget = null; // 'A'/'B'（ノート）または textareaID（メ
 let emojiPanelMode   = 'note'; // 'note' or 'memo'
 
 function _splitEmojis(text) {
-  // Intl.Segmenter でグラフェム単位に正確に分割（variation selector対応）
   if (typeof Intl !== 'undefined' && Intl.Segmenter) {
     const seg = new Intl.Segmenter('ja', { granularity: 'grapheme' });
     return [...seg.segment(text)].map(s => s.segment).filter(s => s.trim() !== '');
   }
   return text.trim().split(/\s+/).filter(Boolean);
 }
-
 function _initEmojiPanel() {
   const panel = document.getElementById('emojiPanel');
   if (!panel || panel._initialized) return;
   panel._initialized = true;
-  // 各カテゴリ行の絵文字をグラフェム単位で分割してボタン化
   panel.querySelectorAll('.emoji-cat-row').forEach(row => {
     const emojis = _splitEmojis(row.textContent);
     row.innerHTML = emojis.map(em => {
-      // onclick属性内のシングルクォートとバックスラッシュをエスケープ
       const safe = em.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       return `<button class="tb-btn" style="font-size:15px;padding:2px 3px;" onclick="insertEmojiFromPanel('${safe}')">${em}</button>`;
     }).join('');
@@ -4833,337 +5151,6 @@ closeModal = function(id) {
 };
 
 </script>
-
-<!-- ── メモ入力モーダル ── -->
-<div class="modal-overlay" id="memoModal">
-  <div class="memo-modal-box">
-    <div class="memo-modal-hdr">
-      <span class="memo-modal-hdr-title" id="memoModalTitle">💡 アイディアメモを追加</span>
-      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
-        <div style="position:relative;">
-          <button class="btn-secondary" onclick="toggleMemoTmplPanel()" id="memoTmplBtn" style="font-size:11px;padding:4px 10px;">📋 テンプレート</button>
-          <div id="memoTmplPanel" style="display:none;position:absolute;top:100%;right:0;z-index:200;background:var(--paper);border:1px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,0.15);min-width:240px;max-width:320px;border-radius:2px;margin-top:4px;">
-            <div style="padding:6px 10px;background:var(--paper2);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:0.1em;color:var(--muted);display:flex;align-items:center;gap:6px;">
-              📋 付箋テンプレート
-              <button onclick="document.getElementById('memoTmplPanel').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);">✕</button>
-            </div>
-            <div id="memoTmplList" style="max-height:240px;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;"></div>
-            <div style="padding:6px 10px;border-top:1px solid var(--border);background:var(--paper2);">
-              <div style="font-size:9px;color:var(--muted);margin-bottom:4px;">現在の内容をテンプレートとして保存</div>
-              <div style="display:flex;gap:4px;">
-                <input type="text" id="memoTmplNameInput" placeholder="テンプレート名…" style="flex:1;font-size:11px;padding:3px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);"
-                  onkeydown="if(!event.isComposing&&event.key==='Enter'){event.preventDefault();saveMemoTmpl();}" />
-                <button onclick="saveMemoTmpl()" style="font-size:11px;padding:3px 10px;background:var(--accent);color:#fff;border:none;cursor:pointer;">保存</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button class="btn-primary" onclick="saveMemo()">保存する</button>
-        <button class="btn-secondary" onclick="closeModal('memoModal')">キャンセル</button>
-      </div>
-    </div>
-
-    <!-- メタバー：カラー・マーク・タイトル・タグ を1行に -->
-    <div class="memo-meta-bar">
-      <!-- カラーボタン（クリックでポップアップ） -->
-      <div id="memoColorPreview" style="width:18px;height:18px;border-radius:50%;background:#f5e6d0;box-shadow:0 0 0 1px rgba(0,0,0,0.18);cursor:pointer;flex-shrink:0;" title="カラーを選択" onclick="toggleMemoPopup('colorPop',this)"></div>
-      <!-- マーク（絵文字）ボタン -->
-      <span class="memo-meta-emoji-preview" id="memoSelEmoji" title="マークを選択" onclick="toggleMemoPopup('emojiPop',this)">　</span>
-      <!-- タイトル -->
-      <input class="memo-title-input" id="memoTitle" placeholder="タイトル・見出し" />
-      <!-- タグ -->
-      <span style="font-size:9px;color:var(--muted);flex-shrink:0;">#タグ</span>
-      <input class="memo-tag-input-sm" id="memoTags" placeholder="アイディア キャラ" />
-      <!-- グループ -->
-      <span style="font-size:9px;color:var(--muted);flex-shrink:0;">📁</span>
-      <select id="memoGroupSel" style="font-size:10px;padding:2px 6px;border:1px solid var(--border);background:var(--paper);color:var(--ink);max-width:110px;"></select>
-      <!-- クリアボタン -->
-      <button onclick="clearMemoModal()" title="入力内容をすべてクリア" style="flex-shrink:0;font-size:10px;padding:2px 8px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;">✕ クリア</button>
-    </div>
-
-    <!-- カラーポップアップ -->
-    <div class="memo-popup" id="colorPop">
-      <div class="memo-popup-title">カラー</div>
-      <div class="memo-color-row" id="memoColorRow" style="gap:6px;flex-wrap:wrap;display:flex;max-width:240px;">
-        <!-- 淡いパステル（暖色系） -->
-        <div class="color-dot" style="background:#f5e6d0;" data-color="#f5e6d0" onclick="pickColor(this)" title="クリーム"></div>
-        <div class="color-dot" style="background:#fde8e8;" data-color="#fde8e8" onclick="pickColor(this)" title="ベビーピンク"></div>
-        <div class="color-dot" style="background:#fffde8;" data-color="#fffde8" onclick="pickColor(this)" title="レモン"></div>
-        <div class="color-dot" style="background:#fdebd0;" data-color="#fdebd0" onclick="pickColor(this)" title="ピーチ"></div>
-        <div class="color-dot" style="background:#fce4ec;" data-color="#fce4ec" onclick="pickColor(this)" title="ローズ"></div>
-        <div class="color-dot" style="background:#fff3e0;" data-color="#fff3e0" onclick="pickColor(this)" title="オレンジクリーム"></div>
-        <!-- 淡いパステル（寒色・緑系） -->
-        <div class="color-dot" style="background:#e8f0e4;" data-color="#e8f0e4" onclick="pickColor(this)" title="ミントグリーン"></div>
-        <div class="color-dot" style="background:#e0f4f8;" data-color="#e0f4f8" onclick="pickColor(this)" title="スカイ"></div>
-        <div class="color-dot" style="background:#e8eaf8;" data-color="#e8eaf8" onclick="pickColor(this)" title="ラベンダー"></div>
-        <div class="color-dot" style="background:#f3e8f8;" data-color="#f3e8f8" onclick="pickColor(this)" title="ライラック"></div>
-        <div class="color-dot" style="background:#e8f8f5;" data-color="#e8f8f5" onclick="pickColor(this)" title="アクア"></div>
-        <div class="color-dot" style="background:#eaf4fb;" data-color="#eaf4fb" onclick="pickColor(this)" title="アイスブルー"></div>
-        <!-- くすみカラー（中間色） -->
-        <div class="color-dot" style="background:#d4b896;" data-color="#d4b896" onclick="pickColor(this)" title="くすみサンド"></div>
-        <div class="color-dot" style="background:#e8a598;" data-color="#e8a598" onclick="pickColor(this)" title="くすみコーラル"></div>
-        <div class="color-dot" style="background:#c5ddb0;" data-color="#c5ddb0" onclick="pickColor(this)" title="くすみグリーン"></div>
-        <div class="color-dot" style="background:#a8c8e8;" data-color="#a8c8e8" onclick="pickColor(this)" title="くすみブルー"></div>
-        <div class="color-dot" style="background:#c8b0d8;" data-color="#c8b0d8" onclick="pickColor(this)" title="くすみパープル"></div>
-        <div class="color-dot" style="background:#e8c88a;" data-color="#e8c88a" onclick="pickColor(this)" title="くすみイエロー"></div>
-        <div class="color-dot" style="background:#b8d4c8;" data-color="#b8d4c8" onclick="pickColor(this)" title="くすみセージ"></div>
-        <div class="color-dot" style="background:#d8b0a8;" data-color="#d8b0a8" onclick="pickColor(this)" title="くすみテラコッタ"></div>
-        <!-- ダーク系 -->
-        <div class="color-dot" style="background:#3a2010;" data-color="#3a2010" onclick="pickColor(this)" title="ダークブラウン"></div>
-        <div class="color-dot" style="background:#c4763a;" data-color="#c4763a" onclick="pickColor(this)" title="バーントオレンジ"></div>
-        <div class="color-dot" style="background:#2c3e50;" data-color="#2c3e50" onclick="pickColor(this)" title="ダークネイビー"></div>
-        <div class="color-dot" style="background:#4a5a3a;" data-color="#4a5a3a" onclick="pickColor(this)" title="ダークグリーン"></div>
-        <div class="color-dot" style="background:#6a3050;" data-color="#6a3050" onclick="pickColor(this)" title="ダークプラム"></div>
-        <div class="color-dot" style="background:#5a4a2a;" data-color="#5a4a2a" onclick="pickColor(this)" title="ダークオリーブ"></div>
-        <div class="color-dot" style="background:#1a3a4a;" data-color="#1a3a4a" onclick="pickColor(this)" title="ディープティール"></div>
-        <div class="color-dot" style="background:#3a1a1a;" data-color="#3a1a1a" onclick="pickColor(this)" title="ダークローズウッド"></div>
-      </div>
-    </div>
-
-    <!-- 絵文字ポップアップ -->
-    <div class="memo-popup" id="emojiPop">
-      <div class="memo-popup-title">マーク（付箋左上に表示）</div>
-      <div class="memo-emoji-row" id="memoEmojiRow" style="max-height:180px;overflow-y:auto;">
-        <button class="em-btn" data-em="" onclick="pickEmoji(this)" title="なし" style="font-size:13px;">✕</button>
-        <!-- アイディア・メモ -->
-        <button class="em-btn" data-em="💡" onclick="pickEmoji(this)">💡</button><button class="em-btn" data-em="📌" onclick="pickEmoji(this)">📌</button><button class="em-btn" data-em="📍" onclick="pickEmoji(this)">📍</button><button class="em-btn" data-em="✨" onclick="pickEmoji(this)">✨</button><button class="em-btn" data-em="🔥" onclick="pickEmoji(this)">🔥</button><button class="em-btn" data-em="❓" onclick="pickEmoji(this)">❓</button><button class="em-btn" data-em="❗" onclick="pickEmoji(this)">❗</button><button class="em-btn" data-em="💬" onclick="pickEmoji(this)">💬</button><button class="em-btn" data-em="🗨️" onclick="pickEmoji(this)">🗨️</button><button class="em-btn" data-em="🎯" onclick="pickEmoji(this)">🎯</button><button class="em-btn" data-em="📖" onclick="pickEmoji(this)">📖</button><button class="em-btn" data-em="📚" onclick="pickEmoji(this)">📚</button><button class="em-btn" data-em="✏️" onclick="pickEmoji(this)">✏️</button><button class="em-btn" data-em="🖊️" onclick="pickEmoji(this)">🖊️</button><button class="em-btn" data-em="📝" onclick="pickEmoji(this)">📝</button><button class="em-btn" data-em="🔖" onclick="pickEmoji(this)">🔖</button><button class="em-btn" data-em="📎" onclick="pickEmoji(this)">📎</button><button class="em-btn" data-em="🗒️" onclick="pickEmoji(this)">🗒️</button>
-        <!-- 幻想・神秘 -->
-        <button class="em-btn" data-em="🔮" onclick="pickEmoji(this)">🔮</button><button class="em-btn" data-em="💎" onclick="pickEmoji(this)">💎</button><button class="em-btn" data-em="🗝️" onclick="pickEmoji(this)">🗝️</button><button class="em-btn" data-em="🪄" onclick="pickEmoji(this)">🪄</button><button class="em-btn" data-em="💫" onclick="pickEmoji(this)">💫</button><button class="em-btn" data-em="⭐" onclick="pickEmoji(this)">⭐</button><button class="em-btn" data-em="🌟" onclick="pickEmoji(this)">🌟</button><button class="em-btn" data-em="🌠" onclick="pickEmoji(this)">🌠</button><button class="em-btn" data-em="☄️" onclick="pickEmoji(this)">☄️</button><button class="em-btn" data-em="🌙" onclick="pickEmoji(this)">🌙</button><button class="em-btn" data-em="🌛" onclick="pickEmoji(this)">🌛</button><button class="em-btn" data-em="☀️" onclick="pickEmoji(this)">☀️</button><button class="em-btn" data-em="🌅" onclick="pickEmoji(this)">🌅</button><button class="em-btn" data-em="🏔️" onclick="pickEmoji(this)">🏔️</button><button class="em-btn" data-em="🗺️" onclick="pickEmoji(this)">🗺️</button><button class="em-btn" data-em="⚔️" onclick="pickEmoji(this)">⚔️</button><button class="em-btn" data-em="🛡️" onclick="pickEmoji(this)">🛡️</button><button class="em-btn" data-em="👑" onclick="pickEmoji(this)">👑</button><button class="em-btn" data-em="💀" onclick="pickEmoji(this)">💀</button><button class="em-btn" data-em="👁️" onclick="pickEmoji(this)">👁️</button>
-        <!-- 自然 -->
-        <button class="em-btn" data-em="🌿" onclick="pickEmoji(this)">🌿</button><button class="em-btn" data-em="🍃" onclick="pickEmoji(this)">🍃</button><button class="em-btn" data-em="🌱" onclick="pickEmoji(this)">🌱</button><button class="em-btn" data-em="🌾" onclick="pickEmoji(this)">🌾</button><button class="em-btn" data-em="🍀" onclick="pickEmoji(this)">🍀</button><button class="em-btn" data-em="🌸" onclick="pickEmoji(this)">🌸</button><button class="em-btn" data-em="🌺" onclick="pickEmoji(this)">🌺</button><button class="em-btn" data-em="🌻" onclick="pickEmoji(this)">🌻</button><button class="em-btn" data-em="🌼" onclick="pickEmoji(this)">🌼</button><button class="em-btn" data-em="🌹" onclick="pickEmoji(this)">🌹</button><button class="em-btn" data-em="🍂" onclick="pickEmoji(this)">🍂</button><button class="em-btn" data-em="🌊" onclick="pickEmoji(this)">🌊</button><button class="em-btn" data-em="🌈" onclick="pickEmoji(this)">🌈</button><button class="em-btn" data-em="❄️" onclick="pickEmoji(this)">❄️</button><button class="em-btn" data-em="🔥" onclick="pickEmoji(this)">🔥</button><button class="em-btn" data-em="⚡" onclick="pickEmoji(this)">⚡</button><button class="em-btn" data-em="🌪️" onclick="pickEmoji(this)">🌪️</button>
-        <!-- 生き物 -->
-        <button class="em-btn" data-em="🦋" onclick="pickEmoji(this)">🦋</button><button class="em-btn" data-em="🐾" onclick="pickEmoji(this)">🐾</button><button class="em-btn" data-em="🦊" onclick="pickEmoji(this)">🦊</button><button class="em-btn" data-em="🐱" onclick="pickEmoji(this)">🐱</button><button class="em-btn" data-em="🐰" onclick="pickEmoji(this)">🐰</button><button class="em-btn" data-em="🐺" onclick="pickEmoji(this)">🐺</button><button class="em-btn" data-em="🦁" onclick="pickEmoji(this)">🦁</button><button class="em-btn" data-em="🐦" onclick="pickEmoji(this)">🐦</button><button class="em-btn" data-em="🦅" onclick="pickEmoji(this)">🦅</button><button class="em-btn" data-em="🐉" onclick="pickEmoji(this)">🐉</button><button class="em-btn" data-em="🦄" onclick="pickEmoji(this)">🦄</button><button class="em-btn" data-em="🐟" onclick="pickEmoji(this)">🐟</button>
-        <!-- 感情・ハート -->
-        <button class="em-btn" data-em="💖" onclick="pickEmoji(this)">💖</button><button class="em-btn" data-em="💙" onclick="pickEmoji(this)">💙</button><button class="em-btn" data-em="💚" onclick="pickEmoji(this)">💚</button><button class="em-btn" data-em="💛" onclick="pickEmoji(this)">💛</button><button class="em-btn" data-em="🧡" onclick="pickEmoji(this)">🧡</button><button class="em-btn" data-em="💜" onclick="pickEmoji(this)">💜</button><button class="em-btn" data-em="🖤" onclick="pickEmoji(this)">🖤</button><button class="em-btn" data-em="🤍" onclick="pickEmoji(this)">🤍</button><button class="em-btn" data-em="💔" onclick="pickEmoji(this)">💔</button><button class="em-btn" data-em="😊" onclick="pickEmoji(this)">😊</button><button class="em-btn" data-em="😢" onclick="pickEmoji(this)">😢</button><button class="em-btn" data-em="😤" onclick="pickEmoji(this)">😤</button><button class="em-btn" data-em="😨" onclick="pickEmoji(this)">😨</button><button class="em-btn" data-em="🤔" onclick="pickEmoji(this)">🤔</button>
-        <!-- 創作・表現 -->
-        <button class="em-btn" data-em="🎨" onclick="pickEmoji(this)">🎨</button><button class="em-btn" data-em="🎭" onclick="pickEmoji(this)">🎭</button><button class="em-btn" data-em="🎬" onclick="pickEmoji(this)">🎬</button><button class="em-btn" data-em="🎵" onclick="pickEmoji(this)">🎵</button><button class="em-btn" data-em="🎶" onclick="pickEmoji(this)">🎶</button><button class="em-btn" data-em="🎮" onclick="pickEmoji(this)">🎮</button><button class="em-btn" data-em="🎲" onclick="pickEmoji(this)">🎲</button><button class="em-btn" data-em="🎪" onclick="pickEmoji(this)">🎪</button><button class="em-btn" data-em="🏆" onclick="pickEmoji(this)">🏆</button>
-        <!-- 警告・管理 -->
-        <button class="em-btn" data-em="⚠️" onclick="pickEmoji(this)">⚠️</button><button class="em-btn" data-em="🚨" onclick="pickEmoji(this)">🚨</button><button class="em-btn" data-em="🔒" onclick="pickEmoji(this)">🔒</button><button class="em-btn" data-em="🔑" onclick="pickEmoji(this)">🔑</button><button class="em-btn" data-em="⏳" onclick="pickEmoji(this)">⏳</button><button class="em-btn" data-em="⌛" onclick="pickEmoji(this)">⌛</button><button class="em-btn" data-em="🕯️" onclick="pickEmoji(this)">🕯️</button><button class="em-btn" data-em="🔍" onclick="pickEmoji(this)">🔍</button>
-        <!-- 飲食 -->
-        <button class="em-btn" data-em="☕" onclick="pickEmoji(this)">☕</button><button class="em-btn" data-em="🍵" onclick="pickEmoji(this)">🍵</button><button class="em-btn" data-em="🍷" onclick="pickEmoji(this)">🍷</button><button class="em-btn" data-em="🍺" onclick="pickEmoji(this)">🍺</button><button class="em-btn" data-em="🍰" onclick="pickEmoji(this)">🍰</button><button class="em-btn" data-em="🍎" onclick="pickEmoji(this)">🍎</button>
-      </div>
-    </div>
-
-    <!-- リンク管理 -->
-    <div class="memo-meta-bar" id="memoLinkBar" style="gap:6px;flex-wrap:wrap;">
-      <span style="font-size:9px;color:var(--muted);flex-shrink:0;">🔗 リンク</span>
-      <div id="memoLinkList" style="display:flex;flex-wrap:wrap;gap:4px;flex:1;"></div>
-      <button onclick="addMemoLink()" style="flex-shrink:0;font-size:10px;padding:2px 8px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;">＋ 追加</button>
-    </div>
-
-    <div class="memo-modal-body">
-      <!-- 左：表面 -->
-      <div class="memo-side">
-        <div class="memo-side-lbl" style="display:flex;align-items:center;">
-          <span>📷 表面</span>
-          <button onclick="clearMemoFront()" title="表面の本文をクリア" style="margin-left:auto;font-size:9px;padding:1px 7px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:1px;">✕ 本文クリア</button>
-        </div>
-        <div class="memo-tb" id="memoTbFront"></div>
-        <textarea class="memo-body-ta" id="memoFront" placeholder="表面メモ（短く、ひと目でわかるように）&#10;&#10;ツールバーから罫線・記号・絵文字を挿入できます"></textarea>
-      </div>
-      <!-- 右：裏面 -->
-      <div class="memo-side">
-        <div class="memo-side-lbl" style="display:flex;align-items:center;">
-          <span>📝 裏面（自由記述）</span>
-          <button onclick="clearMemoBack()" title="裏面の本文をクリア" style="margin-left:auto;font-size:9px;padding:1px 7px;background:none;border:1px solid var(--border);color:var(--muted);cursor:pointer;border-radius:1px;">✕ 本文クリア</button>
-        </div>
-        <div class="memo-tb" id="memoTbBack"></div>
-        <textarea class="memo-body-ta" id="memoBack" placeholder="詳細・展開案・参考メモなど自由に…&#10;&#10;ツールバーから罫線・記号・絵文字を挿入できます"></textarea>
-      </div>
-    </div>
-  </div>
-</div>
-
-<button class="memo-fab" id="memoFab" onclick="showMemoModal()" title="アイディアを追加">＋</button>
-
-<button id="memoScrollTopBtn" onclick="memoScrollTop()" title="最上部へ">↑</button>
-
-<!-- グループ管理モーダル -->
-<div class="modal-overlay" id="groupManagerModal">
-  <div class="modal" style="width:460px;">
-    <h2>📁 グループ管理</h2>
-    <div id="groupManagerList" style="margin-bottom:14px;max-height:200px;overflow-y:auto;"></div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;">
-      <div style="font-size:9px;letter-spacing:0.1em;color:var(--muted);margin-bottom:6px;">新しいグループを追加</div>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-        <input type="text" id="newGroupName" placeholder="グループ名" 
-          style="flex:1;padding:5px 8px;border:1px solid var(--border);font-family:sans-serif;font-size:12px;"
-          onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'){event.preventDefault();addGroup();}" />
-        <!-- カラー表示ボタン（クリックでpickerを開く） -->
-        <div id="groupColorPreview" style="width:28px;height:28px;border-radius:50%;background:#c4763a;border:2px solid var(--border);cursor:pointer;flex-shrink:0;" title="カラーを選択" onclick="toggleGroupColorPicker()"></div>
-        <button class="btn-primary" onclick="addGroup()" style="white-space:nowrap;">＋ 追加</button>
-      </div>
-      <!-- カラーピッカー（プリセット＋カスタム） -->
-      <div id="groupColorPicker" style="display:none;background:var(--paper2);border:1px solid var(--border);border-radius:3px;padding:10px 12px;margin-bottom:8px;">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-bottom:6px;">プリセットカラー</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;" id="groupColorPresets"></div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:9px;color:var(--muted);">カスタム：</span>
-          <input type="color" id="newGroupColor" value="#c4763a"
-            style="width:36px;height:28px;border:1px solid var(--border);padding:1px;cursor:pointer;"
-            title="カスタムカラーを選択（スポイトも使用可）"
-            oninput="onGroupColorCustom(this)" />
-          <span style="font-size:10px;color:var(--muted);" id="groupColorHex">#c4763a</span>
-        </div>
-      </div>
-    </div>
-    <div class="modal-actions" style="margin-top:12px;">
-      <button class="btn-secondary" onclick="closeModal('groupManagerModal')">閉じる</button>
-    </div>
-  </div>
-</div>
-<!-- ── フローティングAIボタン ── -->
-<div id="fab-cluster">
-  <button id="floatAiBtn" onclick="toggleFloatAi()" title="AIに質問（どこからでも使えます）">🤖</button>
-  <button id="floatAiHideBtn" onclick="hideFloatAiBtn()" title="AIボタンを一時的に隠す">✕</button>
-</div>
-<button id="faiShowAgainBtn" onclick="showFloatAiBtn()" title="AIボタンを再表示">🤖 再表示</button>
-
-<!-- ── フローティングAIパネル ── -->
-<div id="floatAiPanel" class="hidden">
-  <div class="fai-header" id="faiHeader">
-    <span class="fai-title">🤖 AI アシスタント</span>
-    <span class="fai-ctx-label" id="faiCtxLabel">コンテキストなし</span>
-    <button class="fai-close-btn" onclick="toggleFloatAi()" title="閉じる">×</button>
-  </div>
-  <div class="fai-prov-row">
-    <button class="fai-prov-btn active" id="faiProvGemini" onclick="setFaiProv('gemini')">Gemini</button>
-    <button class="fai-prov-btn" id="faiProvClaude" onclick="setFaiProv('claude')">Claude</button>
-    <span class="fai-ctx-info" id="faiCtxInfo">—</span>
-  </div>
-  <!-- 選択テキストバー -->
-  <div class="fai-sel-bar" id="faiSelBar">
-    <span style="font-size:9px;color:var(--muted);flex-shrink:0;">📌 選択中</span>
-    <span class="fai-sel-tag" id="faiSelTag"></span>
-    <!-- エディタからの選択時 -->
-    <span id="faiSelEditorBtns" style="display:flex;gap:2px;">
-      <button class="fai-sel-btn" onclick="faiSearchWithSelection()" title="質問欄にセットして自由編集・送信">🔍 AI検索</button>
-      <button class="fai-sel-btn" onclick="faiAskWithSelection('この文を改善して')">改善</button>
-      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容を展開して')">展開</button>
-      <button class="fai-sel-btn" onclick="faiAskWithSelection('この文にフィードバックをください')">FB</button>
-    </span>
-    <!-- AIバブルからの選択時 -->
-    <span id="faiSelAiBubbleBtns" style="display:none;gap:2px;">
-      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容をもっと深く掘り下げて')">🔍 深堀</button>
-      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容を展開して')">展開</button>
-      <button class="fai-sel-btn" onclick="faiAskWithSelection('この内容について別の視点から考えて')">別視点</button>
-    </span>
-    <button class="fai-sel-btn" onclick="faiClearSelection()" style="margin-left:auto;">✕</button>
-  </div>
-  <div class="fai-log" id="faiLog">
-    <span style="color:#c8bfb0;font-size:11px;align-self:center;margin:auto;">AIへの質問がここに表示されます</span>
-  </div>
-  <div class="fai-insert-row" id="faiInsertRow">
-    <button class="fai-ins-btn primary" onclick="faiInsertToEditor()" title="現在開いているノートに挿入">📋 挿入</button>
-    <button class="fai-ins-btn primary" onclick="faiInsertToNewNote()" title="新しいノートを作成して挿入">＋ 新規ノートに挿入</button>
-    <button class="fai-ins-btn" onclick="faiSaveAsMemoDialog()">💡 付箋に保存</button>
-    <button class="fai-ins-btn" onclick="faiCopyAnswer()">コピー</button>
-    <button class="fai-ins-btn" onclick="faiSaveToHistory()">📚 履歴に保存</button>
-    <button class="fai-ins-btn" onclick="faiToggleHistory()" title="過去の会話を呼び出す">📂 履歴</button>
-    <button class="fai-ins-btn" onclick="faiResetChat()">🔄 リセット</button>
-    <button class="fai-ins-btn" onclick="faiUnselectAllBubbles()" title="バブル選択を全解除">☐ 全解除</button>
-  </div>
-  <!-- 履歴パネル -->
-  <div id="faiHistoryPanel" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:var(--paper);border:1px solid var(--border);border-bottom:none;box-shadow:0 -4px 16px rgba(0,0,0,0.12);z-index:10;max-height:260px;display:none;flex-direction:column;">
-    <div style="padding:5px 10px;background:var(--ink);color:var(--paper);font-size:10px;letter-spacing:0.1em;display:flex;align-items:center;flex-shrink:0;">
-      📚 会話履歴
-      <button onclick="faiCloseHistory()" style="margin-left:auto;background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:13px;padding:0 2px;">×</button>
-    </div>
-    <div id="faiHistoryList" style="flex:1;overflow-y:auto;padding:4px 6px;display:flex;flex-direction:column;gap:3px;scrollbar-width:thin;"></div>
-  </div>
-  <!-- テンプレートパネル（質問入力の上に開く） -->
-  <div style="position:relative;">
-    <div class="fai-tmpl-panel" id="faiTmplPanel">
-      <div class="fai-tmpl-hdr">
-        📋 質問テンプレート
-        <button onclick="faiCloseTmpl()" style="margin-left:auto;font-size:10px;background:none;border:none;cursor:pointer;color:var(--muted);">✕</button>
-      </div>
-      <div class="fai-tmpl-list" id="faiTmplList"></div>
-      <div class="fai-tmpl-add">
-        <input class="fai-tmpl-input" id="faiTmplInput" placeholder="現在の質問をテンプレートとして保存…"
-          onkeydown="if(!event.isComposing&&event.key==='Enter'){event.preventDefault();faiSaveTmpl();}" />
-        <button class="fai-tmpl-save-btn" onclick="faiSaveTmpl()">保存</button>
-      </div>
-    </div>
-    <div class="fai-input-area">
-      <button class="fai-ins-btn" onclick="faiToggleTmpl()" title="テンプレート" style="align-self:stretch;padding:0 8px;font-size:14px;">📋</button>
-      <textarea class="fai-textarea" id="faiQuestion" placeholder="何でも質問できます。Ctrl+Enterで送信。&#10;📋 でテンプレート登録・呼び出し"
-        onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&event.altKey){event.preventDefault();faiAsk();}"></textarea>
-      <button class="fai-send-btn" id="faiSendBtn" onclick="faiAsk()">送信<br><span style="font-size:8px;opacity:0.7;">Alt+↵</span></button>
-    </div>
-  </div>
-  <div class="fai-resize-handle" id="faiResizeHandle"></div>
-</div>
-
-<!-- FAI 付箋保存ダイアログ -->
-<div class="fai-save-memo-overlay" id="faiSaveMemoOverlay" onclick="if(event.target===this&&_overlayMouseDownTarget===this)faiCloseSaveMemo()">
-  <div class="fai-save-memo-box">
-    <h3>💡 AI回答を付箋に保存</h3>
-    <!-- 保存先選択 -->
-    <div style="margin-bottom:8px;">
-      <div style="font-size:9px;letter-spacing:0.1em;color:var(--muted);margin-bottom:4px;">保存先</div>
-      <div class="fai-save-dest-row">
-        <button class="fai-save-dest-btn" data-dest="front" onclick="faiSetDest(this)">📷 表面のみ</button>
-        <button class="fai-save-dest-btn" data-dest="back" onclick="faiSetDest(this)">📝 裏面のみ</button>
-        <button class="fai-save-dest-btn active" data-dest="both" onclick="faiSetDest(this)">📷+📝 両面に分けて</button>
-        <button class="fai-save-dest-btn" data-dest="existing" onclick="faiSetDest(this)">📌 既存の付箋に追記</button>
-      </div>
-    </div>
-    <!-- 複数バブル振り分けUI（複数チェック時のみ表示） -->
-    <div class="fai-assign-ui" id="faiAssignUI" style="display:none;">
-      <div class="fai-assign-header">📋 各回答の振り分け（📷表面 / 📝裏面 / ✕除外）</div>
-      <div class="fai-assign-list" id="faiAssignList"></div>
-    </div>
-    <!-- 新規：タイトル（既存モード以外で表示） -->
-    <div id="faiSaveTitleWrap" class="fai-save-field">
-      <label>タイトル</label>
-      <input type="text" id="faiSaveMemoTitle" placeholder="付箋のタイトル" />
-    </div>
-    <!-- 表面のみ / 裏面のみ -->
-    <div id="faiSaveSingle" class="fai-save-field" style="display:none;">
-      <label id="faiSaveSingleLabel">表面（本文）</label>
-      <textarea id="faiSaveMemoBody" rows="4"></textarea>
-    </div>
-    <!-- 両面分割（デフォルト表示） -->
-    <div id="faiSaveBoth" class="fai-save-split">
-      <div>
-        <label>📷 表面</label>
-        <textarea id="faiSaveFront" placeholder="短く・ひと目でわかるように"></textarea>
-      </div>
-      <div>
-        <label>📝 裏面</label>
-        <textarea id="faiSaveBack" placeholder="詳細・展開・参考メモなど"></textarea>
-      </div>
-    </div>
-    <!-- 既存付箋への追記 -->
-    <div id="faiSaveExisting" style="display:none;">
-      <div class="fai-save-field">
-        <label>追記する付箋を選択</label>
-        <select id="faiExistingMemoSel" style="width:100%;padding:5px 8px;border:1px solid var(--border);background:var(--paper2);font-size:12px;color:var(--ink);" onchange="faiPreviewExisting()"></select>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:6px;">
-        <button class="fai-save-dest-btn active" data-exdest="back" id="faiExDestBack" onclick="faiSetExDest('back')">📝 裏面に追記</button>
-        <button class="fai-save-dest-btn" data-exdest="front" id="faiExDestFront" onclick="faiSetExDest('front')">📷 表面に追記</button>
-      </div>
-      <div class="fai-save-field">
-        <label id="faiExistingPreviewLbl">裏面（現在の内容）</label>
-        <textarea id="faiExistingPreview" rows="4" style="padding:5px 8px;border:1px solid var(--border);background:var(--paper2);font-family:serif;font-size:11px;line-height:1.8;color:var(--ink);width:100%;resize:vertical;"></textarea>
-      </div>
-    </div>
-    <div id="faiSaveTagWrap" class="fai-save-field" style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-      <label style="margin:0;flex-shrink:0;">タグ</label>
-      <input type="text" id="faiSaveMemoTags" placeholder="AI回答 創作" style="flex:1;" />
-    </div>
-    <div class="fai-save-field" style="display:flex;gap:8px;align-items:center;margin-top:6px;">
-      <label style="margin:0;flex-shrink:0;">グループ</label>
-      <select id="faiSaveGroupSel" style="flex:1;padding:4px 8px;border:1px solid var(--border);background:var(--paper2);font-size:12px;color:var(--ink);"></select>
-    </div>
-    <div class="fai-save-actions">
-      <button class="btn-primary" onclick="faiDoSaveAsMemo()">💾 付箋として保存</button>
-      <button class="btn-secondary" onclick="faiCloseSaveMemo()">キャンセル</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
