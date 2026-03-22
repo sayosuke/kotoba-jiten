@@ -2271,12 +2271,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ── フローティングAI（共通）── -->
 <style>
+/* ── 右端固定ツールバー（AIボタン群） ── */
+#fab-cluster {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  pointer-events: none;
+}
+#fab-cluster > * { pointer-events: auto; }
+
 #floatAiBtn {
-  position: fixed; bottom: 118px; right: 20px; z-index: 1100;
-  width: 40px; height: 40px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 4px 0 0 4px;
   background: var(--ink); color: var(--paper);
-  border: none; font-size: 18px; cursor: pointer;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.28);
+  border: none; font-size: 17px; cursor: pointer;
+  box-shadow: -2px 2px 8px rgba(0,0,0,0.22);
   display: flex; align-items: center; justify-content: center;
   transition: background 0.15s;
 }
@@ -2391,7 +2405,9 @@ document.addEventListener('DOMContentLoaded', () => {
 @keyframes fai-spin { to { transform: rotate(360deg); } }
 </style>
 
+<div id="fab-cluster">
 <button id="floatAiBtn" onclick="toggleFloatAi()" title="AIに質問">🤖</button>
+</div>
 <div id="floatAiPanel" class="hidden">
   <div class="fai-header" id="faiHeader">
     <span class="fai-title">🤖 AI アシスタント</span>
