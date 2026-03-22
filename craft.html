@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' https://api.anthropic.com https://generativelanguage.googleapis.com; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://api.anthropic.com https://generativelanguage.googleapis.com;">
 <title>創作ノート</title>
 <style>
 :root {
@@ -650,7 +650,7 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 .gdock.dock-highlight { border-color:var(--accent2); background:#fffaf4; }
 
 /* ── フローティングAIウィンドウ ── */
-/* ── 右端固定ツールバー（AIボタン群） ── */
+/* ── 右端固定AIタブ ── */
 #fab-cluster {
   position: fixed;
   right: 0;
@@ -668,7 +668,7 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 #floatAiBtn {
   width: 36px; height: 36px; border-radius: 4px 0 0 4px;
   background: var(--ink); color: var(--paper);
-  border: 1px solid rgba(255,255,255,0.12); border-right: none;
+  border: 1px solid rgba(255,255,255,0.15); border-right: none;
   font-size: 17px; cursor: pointer;
   box-shadow: -2px 2px 8px rgba(0,0,0,0.22);
   display: flex; align-items: center; justify-content: center;
@@ -676,10 +676,9 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
 }
 #floatAiBtn:hover { background: var(--accent2); }
 #floatAiBtn.active { background: var(--accent2); }
-
 #floatAiHideBtn {
-  width: 36px; height: 20px; border-radius: 4px 0 0 4px;
-  background: rgba(0,0,0,0.28); color: rgba(255,255,255,0.7);
+  width: 36px; height: 18px; border-radius: 4px 0 0 4px;
+  background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.7);
   border: 1px solid rgba(255,255,255,0.1); border-right: none;
   font-size: 9px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -687,7 +686,6 @@ body { font-family: 'Noto Serif JP', serif; background: var(--paper); color: var
   padding: 0; line-height: 1;
 }
 #fab-cluster:hover #floatAiHideBtn { opacity: 1; }
-
 #faiShowAgainBtn {
   position: fixed; top: 50%; right: 0; transform: translateY(-50%);
   z-index: 1098;
@@ -2256,6 +2254,7 @@ let emojiPanelTarget = null; // 'A'/'B'（ノート）または textareaID（メ
 let emojiPanelMode   = 'note'; // 'note' or 'memo'
 
 function _splitEmojis(text) {
+  // Intl.Segmenter でグラフェム単位に正確に分割（variation selector対応）
   if (typeof Intl !== 'undefined' && Intl.Segmenter) {
     const seg = new Intl.Segmenter('ja', { granularity: 'grapheme' });
     return [...seg.segment(text)].map(s => s.segment).filter(s => s.trim() !== '');
@@ -2267,11 +2266,12 @@ function _initEmojiPanel() {
   const panel = document.getElementById('emojiPanel');
   if (!panel || panel._initialized) return;
   panel._initialized = true;
-  // 各カテゴリ行の絵文字テキストをグラフェム単位でボタンに変換
+  // 各カテゴリ行の絵文字をグラフェム単位で分割してボタン化
   panel.querySelectorAll('.emoji-cat-row').forEach(row => {
     const emojis = _splitEmojis(row.textContent);
     row.innerHTML = emojis.map(em => {
-      const safe = em.replace(/'/g, '&#39;');
+      // onclick属性内のシングルクォートとバックスラッシュをエスケープ
+      const safe = em.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
       return `<button class="tb-btn" style="font-size:15px;padding:2px 3px;" onclick="insertEmojiFromPanel('${safe}')">${em}</button>`;
     }).join('');
   });
