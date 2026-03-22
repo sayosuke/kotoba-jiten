@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src 'self' https://api.anthropic.com https://generativelanguage.googleapis.com; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;">
 <title>創作ノート</title>
 <style>
 :root {
@@ -1259,6 +1260,7 @@ let _faiLastEditorId = 'bodyA';
 let _faiLastEditorSel = { start: 0, end: 0 };
 let isDirty={A:false,B:false}, autoSaveTimers={A:null,B:null};
 let geminiKey='', claudeKey='', aiProvider='gemini';
+var faiOpen = false, faiHistory = [], faiProvider = 'gemini';
 let currentAddType='ルール', addParentId=null, activeTagFilter='';
 let snippets=[], snippetTargetPane='A', dragId=null;
 
@@ -3874,9 +3876,7 @@ if(first)openNote(first.id,'A');
 // ══════════════════════════════════════════════════════
 // フローティング AI パネル
 // ══════════════════════════════════════════════════════
-let faiOpen = false;
-let faiHistory = [];
-let faiProvider = 'gemini'; // 既存のaiProviderと連動
+// faiOpen / faiHistory / faiProvider はスクリプト先頭で宣言済み
 
 // パネルの表示/非表示
 function hideFloatAiBtn() {
