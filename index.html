@@ -844,21 +844,16 @@ function saveKey(provider) {
     const key = document.getElementById('geminiKeyInput').value.trim();
     if (!key.startsWith('AIza')) { alert('GeminiのAPIキーは AIza から始まります'); return; }
     geminiKey = key;
-    apiKey = geminiKey;
     document.getElementById('geminiStatus').textContent = '✓ 保存しました';
     document.getElementById('geminiStatus').style.color = 'var(--weak)';
   } else {
     const key = document.getElementById('claudeKeyInput').value.trim();
     if (!key.startsWith('sk-ant-')) { alert('ClaudeのAPIキーは sk-ant- から始まります'); return; }
     claudeKey = key;
-    apiKey = claudeKey;
     document.getElementById('claudeStatus').textContent = '✓ 保存しました';
     document.getElementById('claudeStatus').style.color = 'var(--weak)';
   }
-  // 保存したプロバイダーを選択状態にする
-  apiProvider = provider;
-  const radio = document.querySelector(`input[name="apiProvider"][value="${provider}"]`);
-  if (radio) radio.checked = true;
+  // キーの保存はプロバイダー選択に影響しない
   updateProviderBadge();
   saveStorage();
 }
