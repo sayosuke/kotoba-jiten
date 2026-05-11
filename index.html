@@ -2451,9 +2451,10 @@ document.addEventListener('DOMContentLoaded', () => {
         panel.style.top = Math.max(10, window.innerHeight - ph - 80) + 'px';
         panel.style.left = Math.max(10, window.innerWidth - pw - 24) + 'px';
         panel.style.right = 'auto'; panel.style.bottom = 'auto';
+        // 初回のみデフォルトプロバイダを設定（手動切り替え後は維持）
+        faiProvider = (typeof geminiKey !== 'undefined' && geminiKey) ? 'gemini' : (typeof apiProvider !== 'undefined' ? (apiProvider === 'anthropic' ? 'claude' : 'gemini') : 'gemini');
       }
       // プロバイダ同期
-      faiProvider = (typeof geminiKey !== 'undefined' && geminiKey) ? 'gemini' : (typeof apiProvider !== 'undefined' ? (apiProvider === 'anthropic' ? 'claude' : 'gemini') : 'gemini');
       _faiSyncProv();
       document.getElementById('faiQuestion').focus();
       // ドラッグ初期化
